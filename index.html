@@ -1,0 +1,2528 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Mantenimiento Preventivo · Checklist por Habitación</title>
+<style>
+:root{
+  --bg:#0b0b10;
+  --card: rgba(255,255,255,.06);
+  --border: rgba(255,255,255,.12);
+  --txt: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.65);
+  --radius: 18px;
+
+  /* Tiles */
+  --tile-min-w: clamp(92px, 10.5vw, 132px);
+  --tile-h: clamp(38px, 4vw, 48px);
+  --gap: clamp(6px, .7vw, 10px);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--txt);
+  background: radial-gradient(1200px 600px at 20% 0%, rgba(140,120,255,.18), transparent 65%),
+              radial-gradient(900px 600px at 90% 10%, rgba(40,200,255,.12), transparent 60%),
+              var(--bg);
+  overflow-x:hidden;
+}
+
+/* Header (igual estética, pero limpio) */
+header{
+  position: sticky; top:0; z-index:10;
+  backdrop-filter: blur(10px);
+  background: rgba(10,10,16,.65);
+  border-bottom: 1px solid var(--border);
+}
+.wrap{max-width: 1400px; margin: 0 auto; padding: 14px 16px;}
+.top{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+.brand{display:flex; gap:10px; align-items:center;}
+.brand-logo{
+  width:52px;height:52px;flex:0 0 52px;object-fit:contain;border-radius:14px;
+  background:rgba(255,255,255,.95);padding:8px;border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 10px 26px rgba(0,0,0,.35);
+}
+h1{font-size:16px;margin:0;letter-spacing:.2px;}
+.sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.legend{display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--muted);}
+.pill{display:flex; gap:8px; align-items:center; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background: rgba(255,255,255,.04);}
+.sq{width:10px;height:10px;border-radius:3px;}
+.sq.rojo{
+  background:
+    radial-gradient(120px 60px at 30% 20%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%),
+    linear-gradient(145deg, #ff4a4a 0%, #d60000 55%, #9b0000 100%);
+  border:1px solid rgba(255,80,80,.35);
+}
+
+/* Layout */
+main .grid{
+  max-width: 1400px;
+  margin: 18px auto;
+  padding: 0 16px 22px;
+  display:block; /* sin panel derecho: libre de funciones */
+}
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+}
+.rooms{padding: 14px; min-width:0;}
+.rooms h2{margin:0 0 10px; font-size: 14px; color: rgba(255,255,255,.86);}
+
+.towers-stack{display:flex; flex-direction:column; gap:18px;}
+
+/* Torre / piso */
+.torre{
+  background: rgba(255,255,255,.04);
+  border-radius: 18px;
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+.torre-header{
+  padding:10px 14px;
+  text-align:center;
+  font-weight:800;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  background: rgba(255,255,255,.03);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+}
+.torre-sub{
+  text-align:center;
+  font-size:11px;
+  color:var(--muted);
+  padding:6px 10px 10px;
+  border-bottom:1px dashed rgba(255,255,255,.10);
+}
+
+/* Piso */
+.piso{padding:10px 10px 6px; border-bottom:1px dashed rgba(255,255,255,.09);}
+.piso:last-child{border-bottom:none;}
+.piso-titulo{font-size:13px;font-weight:700;margin-bottom:8px;color:#d6e6ff;}
+
+/* ===== BOTONES/UNIDADES HORIZONTALES (SIN ESPACIOS INNECESARIOS) ===== */
+.fila{
+  display:flex;
+  flex-wrap:wrap;
+  gap: var(--gap);
+  align-items:flex-start;
+  justify-content:flex-start;
+}
+
+/* ===== ROJO APERALADO POR DEFAULT (TODAS) ===== */
+.hab{
+  width: var(--tile-min-w);
+  flex: 1 0 var(--tile-min-w);
+  height: var(--tile-h);
+  border-radius: 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 8px 10px;
+  gap: 10px;
+  color:#fff;
+  border: 1px solid rgba(255,90,90,.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    0 10px 22px rgba(0,0,0,.28);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.35) 0%, rgba(255,255,255,.10) 18%, rgba(255,255,255,0) 40%),
+    linear-gradient(145deg, #ff4a4a 0%, #d60000 55%, #9b0000 100%);
+  position:relative;
+  overflow:hidden;
+}
+.hab::after{
+  content:"";
+  position:absolute;
+  inset:-30%;
+  background: conic-gradient(from 180deg, rgba(255,255,255,0), rgba(255,255,255,.14), rgba(255,255,255,0), rgba(255,255,255,.10), rgba(255,255,255,0));
+  transform: rotate(18deg);
+  opacity:.55;
+  pointer-events:none;
+}
+
+/* Texto interno */
+.num{font-weight:900;font-size: clamp(12px, 1.15vw, 16px); line-height:1; white-space:nowrap;}
+.tipo{opacity:.92; font-weight:800; font-size: clamp(10px, 1vw, 12px); white-space:nowrap;}
+
+/* En móvil: que sigan siendo horizontales sin amontonarse */
+@media (max-width: 520px){
+  :root{ --tile-min-w: clamp(120px, 46vw, 180px); }
+}
+
+/* (FIX) En modo bloqueado, NO deshabilitamos clicks en casillas; el JS solicita NIP al intentar cambiar. */
+.mp-locked .mp-lock-note{ display:block; }
+.mp-lock-note{
+  display:none;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.78);
+  font-size: 12px;
+}
+
+
+/* ====== VUELTAS (LIBRO) ====== */
+.vuelta-strip{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  padding:10px 12px; margin-top:10px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  border-radius:14px;
+}
+.vuelta-btn{
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.18);
+  color: rgba(255,255,255,.9);
+  padding:6px 10px;
+  border-radius:999px;
+  font-weight:900;
+  letter-spacing:.2px;
+  cursor:pointer;
+}
+.vuelta-btn:hover{ filter:brightness(1.05); }
+.vuelta-btn.active{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.22);
+  box-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+.vuelta-add{
+  margin-left:auto;
+  display:flex; gap:10px; align-items:center;
+}
+.vuelta-hint{
+  font-size:12px;
+  color: rgba(200,220,255,.85);
+  font-weight:800;
+}
+#btnNuevaVuelta{
+  border:1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.22);
+  color: rgba(255,255,255,.92);
+  padding:6px 12px;
+  border-radius:999px;
+  font-weight:900;
+  cursor:pointer;
+}
+#btnNuevaVuelta:hover{ filter:brightness(1.05); }
+</style><style>
+/* ===== FONDO TORNASOL ANIMADO (ELEGANTE) ===== */
+body{
+  background:
+    radial-gradient(1200px 600px at 10% 10%, rgba(120,90,255,.25), transparent 60%),
+    radial-gradient(900px 700px at 90% 20%, rgba(0,200,255,.20), transparent 60%),
+    radial-gradient(1000px 800px at 50% 90%, rgba(255,120,200,.18), transparent 65%),
+    linear-gradient(180deg, #05060a 0%, #0a0d18 40%, #06070d 100%);
+  background-attachment: fixed;
+  animation: auroraMove 18s ease-in-out infinite alternate;
+}
+
+@keyframes auroraMove{
+  0%{
+    background-position:
+      0% 0%,
+      100% 0%,
+      50% 100%,
+      0% 0%;
+  }
+  100%{
+    background-position:
+      20% 10%,
+      80% 15%,
+      55% 85%,
+      0% 0%;
+  }
+}
+
+/* Sutil capa de brillo */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(120deg,
+      rgba(255,255,255,.04),
+      rgba(255,255,255,0) 40%,
+      rgba(255,255,255,.06) 60%,
+      rgba(255,255,255,0)
+    );
+  mix-blend-mode: overlay;
+  opacity:.6;
+}
+</style><style>
+/* ====== ESTADOS MP (ROJO / AMARILLO PULSO / VERDE) ====== */
+.hab{ cursor:pointer; user-select:none; outline:none; }
+.hab:focus{ box-shadow: 0 0 0 3px rgba(255,255,255,.18), 0 10px 22px rgba(0,0,0,.28); }
+.hab:active{ transform: translateY(1px); }
+
+.hab.mp-rojo{
+  border: 1px solid rgba(255,90,90,.35);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.35) 0%, rgba(255,255,255,.10) 18%, rgba(255,255,255,0) 40%),
+    linear-gradient(145deg, #ff4a4a 0%, #d60000 55%, #9b0000 100%);
+}
+.hab.mp-amarillo{
+  border: 1px solid rgba(255,215,0,.35);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.35) 0%, rgba(255,255,255,.10) 18%, rgba(255,255,255,0) 40%),
+    linear-gradient(145deg, #ffd54a 0%, #f2a900 55%, #b57900 100%);
+}
+.hab.mp-verde{
+  border: 1px solid rgba(60,255,160,.28);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.35) 0%, rgba(255,255,255,.10) 18%, rgba(255,255,255,0) 40%),
+    linear-gradient(145deg, #45ff9b 0%, #18c36a 55%, #0b6c3a 100%);
+}
+
+@keyframes mpPulse {
+  0% { box-shadow: 0 10px 22px rgba(0,0,0,.28), 0 0 0 0 rgba(255,210,80,.35); }
+  70% { box-shadow: 0 10px 22px rgba(0,0,0,.28), 0 0 0 14px rgba(255,210,80,0); }
+  100% { box-shadow: 0 10px 22px rgba(0,0,0,.28), 0 0 0 0 rgba(255,210,80,0); }
+}
+.hab.mp-amarillo.mp-pulse{ animation: mpPulse 1.4s ease-in-out infinite; }
+
+/* ====== MODAL RESPONSIVE + SCROLL INTERNO ====== */
+.mp-overlay{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.58);
+  backdrop-filter: blur(8px);
+  opacity: 0; pointer-events:none;
+  transition: opacity .18s ease;
+  z-index: 1000;
+}
+.mp-modal{
+  position: fixed; inset: 0;
+  display: grid; place-items: center;
+  opacity: 0; pointer-events:none;
+  transition: opacity .18s ease;
+  z-index: 1001;
+  padding: 18px;
+}
+.mp-modal[aria-hidden="false"], .mp-overlay[aria-hidden="false"]{
+  opacity: 1; pointer-events:auto;
+}
+.mp-modal-inner{
+  width: min(980px, 96vw);
+  max-height: min(86vh, 860px);
+  background: rgba(12,14,20,.86);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 22px;
+  box-shadow: 0 30px 90px rgba(0,0,0,.55);
+  overflow: hidden;
+  display:flex;
+  flex-direction: column;
+}
+.mp-modal-header{
+  display:flex; gap:14px;
+  align-items:center; justify-content:space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+}
+.mp-modal-title{display:flex; gap:12px; align-items:center;}
+.mp-badge{
+  width:44px;height:44px; border-radius:14px;
+  display:grid; place-items:center;
+  font-weight:900;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.18);
+}
+.mp-title{font-weight:900; letter-spacing:.2px;}
+.mp-sub{font-size:12px; color: rgba(255,255,255,.68); margin-top:2px;}
+
+.mp-modal-actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+.mp-progress-wrap{display:flex; align-items:center; gap:10px; padding:8px 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  border-radius: 999px;
+}
+.mp-progress-bar{
+  width: 160px; height: 10px; border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  overflow:hidden;
+}
+.mp-progress-fill{
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, rgba(255,255,255,.85), rgba(255,255,255,.35));
+  border-radius: 999px;
+  transition: width .15s ease;
+}
+.mp-progress-text{font-weight:900; font-size:12px; color: rgba(255,255,255,.85); min-width:38px; text-align:right;}
+
+.mp-modal-body{
+  padding: 14px 16px;
+  overflow: auto;
+}
+.mp-section{
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.035);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.mp-section h3{
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing:.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.82);
+}
+.mp-list{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+.mp-item{
+  display:flex; gap:10px; align-items:flex-start;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+}
+.mp-item input{ margin-top: 2px; width: 18px; height: 18px; accent-color: #ffffff;}
+.mp-item label{ font-size: 13px; line-height: 1.25; color: rgba(255,255,255,.88); cursor:pointer;}
+.mp-item .n{font-size:12px; opacity:.8; font-weight:900; margin-right:8px;}
+
+.mp-notes{
+  display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+}
+.mp-notes textarea{
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.22);
+  color: rgba(255,255,255,.9);
+  outline: none;
+}
+.mp-notes textarea{ min-height: 92px; resize: vertical; }
+.mp-upload input[type="file"]{
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,.22);
+  background: rgba(0,0,0,.14);
+  color: rgba(255,255,255,.8);
+}
+
+.mp-modal-footer{
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,.10);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background: rgba(255,255,255,.03);
+}
+.mp-btn{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 900;
+  letter-spacing:.2px;
+  cursor:pointer;
+}
+.mp-btn:hover{ background: rgba(255,255,255,.10); }
+.mp-btn-primary{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.16);
+}
+.mp-btn-primary:hover{ background: rgba(255,255,255,.22); }
+.mp-btn-ghost{ background: transparent; }
+.mp-hint{ font-size:12px; color: rgba(255,255,255,.60); }
+
+@media (max-width: 760px){
+  .mp-list{ grid-template-columns: 1fr; }
+  .mp-notes{ grid-template-columns: 1fr; }
+  .mp-progress-bar{ width: 120px; }
+}
+</style><style>
+/* ====== LAYOUT CON PANEL DERECHO FIJO ====== */
+main .grid{
+  max-width: 1400px;
+  margin: 18px auto;
+  padding: 0 16px 22px;
+  display:grid;
+  grid-template-columns: 1fr min(360px, 30vw);
+  gap: 14px;
+  align-items:start;
+}
+
+/* Panel derecho */
+.mp-side{
+  position: sticky;
+  top: 92px; /* bajo el header sticky */
+  height: calc(100vh - 110px);
+  min-height: 420px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  overflow: hidden;
+}
+.mp-side-inner{
+  height: 100%;
+  display:flex;
+  flex-direction:column;
+}
+.mp-side-head{
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+}
+.mp-side-title{
+  font-weight: 900;
+  letter-spacing:.2px;
+}
+.mp-side-sub{
+  margin-top: 3px;
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+}
+.mp-side-body{
+  padding: 12px 14px;
+  overflow:auto; /* SCROLL VERTICAL */
+}
+
+/* Cards dentro del panel */
+.mp-kpi{
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.20);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+/* GIF (solo cuando está EN PROCESO) dentro de "Avance de habitación" */
+.mp-kpi-room{ position: relative; }
+.mp-proceso-gif{
+  position: absolute;
+  right: 12px;
+  top: 54px; /* arriba del chip de estatus */
+  width: 44px;
+  height: auto;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 10px;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.55));
+}
+.mp-kpi h4{
+  margin:0 0 10px;
+  font-size: 12px;
+  letter-spacing:.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.78);
+}
+.mp-big{
+  font-size: 34px;
+  font-weight: 1000;
+  letter-spacing:-.5px;
+}
+.mp-row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(255,255,255,.86);
+}
+.mp-row small{ color: rgba(255,255,255,.62); }
+.mp-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mp-status-wrap{ position:relative; display:inline-block; }
+.mp-proc-gif{
+  position:absolute;
+  top:-26px;
+  left:50%;
+  transform:translateX(-50%);
+  height:24px;
+  width:auto;
+  pointer-events:none;
+  border-radius:6px;
+}
+
+.mp-dot{ width:10px; height:10px; border-radius: 3px; }
+.mp-dot.rojo{
+  background: linear-gradient(145deg, #ff4a4a 0%, #d60000 55%, #9b0000 100%);
+}
+.mp-dot.amarillo{
+  background: linear-gradient(145deg, #ffd54a 0%, #f2a900 55%, #b57900 100%);
+}
+.mp-dot.verde{
+  background: linear-gradient(145deg, #45ff9b 0%, #18c36a 55%, #0b6c3a 100%);
+}
+
+/* En pantallas medianas/chicas apilamos el panel abajo */
+@media (max-width: 980px){
+  main .grid{
+    grid-template-columns: 1fr;
+  }
+  .mp-side{
+    position: static;
+    height: auto;
+    min-height: unset;
+  }
+  .mp-side-body{
+    max-height: 46vh; /* sigue con scroll si se alarga */
+  }
+}
+</style><style>
+/* ====== FOOTER FIRMA ====== */
+.mp-footer{
+  margin-top: 40px;
+  padding: 28px 16px 34px;
+  border-top: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0) 0%,
+    rgba(5,10,18,.55) 35%,
+    rgba(8,14,26,.85) 100%
+  );
+}
+.mp-footer-inner{
+  max-width: 1400px;
+  margin: 0 auto;
+  text-align: center;
+}
+.mp-footer-line{
+  font-size: 12px;
+  color: rgba(180,210,255,.85);
+  margin-bottom: 4px;
+}
+.mp-footer-brand{
+  margin-top: 8px;
+  font-size: 12px;
+  letter-spacing: .18em;
+  color: rgba(120,180,255,.9);
+}
+</style><style>
+@keyframes tileIn{from{opacity:0;transform:translateY(10px) scale(.98);filter:blur(2px);}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}}
+.hab{position:relative;will-change:transform,opacity;}
+.hab.is-in{animation:tileIn .42s ease both;}
+.hab:hover{transform:translateY(-1px);}
+.hab::before{content:"";position:absolute;inset:-40%;background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), rgba(255,255,255,0) 55%);opacity:0;transition:opacity .18s ease;pointer-events:none;}
+.hab:hover::before{opacity:.9;}
+
+.mp-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:1200;opacity:0;pointer-events:none;transition:opacity .18s ease, transform .18s ease;}
+.mp-toast[aria-hidden="false"]{opacity:1;transform:translateX(-50%) translateY(-6px);}
+.mp-toast-inner{padding:10px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(10,12,18,.82);backdrop-filter:blur(10px);box-shadow:0 16px 40px rgba(0,0,0,.45);color:rgba(255,255,255,.92);font-weight:900;letter-spacing:.2px;font-size:13px;}
+
+.nip-overlay{position:fixed;inset:0;background:rgba(0,0,0,.60);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:1100;}
+.nip-modal{position:fixed;inset:0;display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:1101;padding:18px;}
+.nip-overlay[aria-hidden="false"], .nip-modal[aria-hidden="false"]{opacity:1;pointer-events:auto;}
+.nip-inner{width:min(520px,95vw);background:rgba(12,14,20,.88);border:1px solid rgba(255,255,255,.14);border-radius:22px;box-shadow:0 30px 90px rgba(0,0,0,.55);overflow:hidden;}
+.nip-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);}
+.nip-title{font-weight:1000;letter-spacing:.2px;}
+.nip-close{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.92);width:38px;height:38px;border-radius:12px;cursor:pointer;}
+.nip-body{padding:14px 16px 16px;}
+.nip-text{margin:0 0 12px;color:rgba(255,255,255,.82);font-size:13px;}
+.nip-row{display:flex;gap:10px;}
+.nip-input{flex:1;padding:12px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.22);color:rgba(255,255,255,.92);outline:none;font-weight:900;letter-spacing:.18em;text-align:center;}
+.nip-btn{padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.16);color:rgba(255,255,255,.92);font-weight:1000;cursor:pointer;}
+.nip-btn:hover{background:rgba(255,255,255,.22);}
+.nip-hint{margin-top:10px;font-size:12px;color:rgba(255,255,255,.62);}
+
+.mp-locked #mpSaveBtn{opacity:.6;pointer-events:none;}
+.mp-locked #mpResetBtn{opacity:.6;pointer-events:none;}
+
+
+/* ===== TOAST PRO (guardando con barra) ===== */
+.mp-toast-inner{ padding: 12px 14px; }
+.mp-toast-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.mp-toast-label{ font-weight:1000; letter-spacing:.2px; font-size:13px; color: rgba(255,255,255,.94); }
+.mp-toast-icon{ font-size: 14px; opacity:.95; }
+.mp-toast-bar{
+  margin-top: 10px;
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+}
+.mp-toast-fill{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: rgba(255,255,255,.70);
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+  transition: width .12s linear;
+}
+.mp-toast[data-mode="simple"] .mp-toast-bar{ display:none; }
+</style><style>
+/* ===== HISTORIAL (BORRADOR LOCAL) ===== */
+#mpCloseCycleBtn{ margin-left: 10px; }
+.mp-history{ margin-top:14px; border-top:1px solid rgba(255,255,255,.10); padding-top:14px; }
+.mp-history-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-bottom:10px; }
+.mp-history-title{ font-weight:1000; letter-spacing:.2px; }
+.mp-history-sub{ font-size:12px; color: rgba(255,255,255,.60); }
+.mp-history-list{ max-height:240px; overflow:auto; padding-right:4px; }
+.mp-hcard{ border:1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.22); border-radius:16px; padding:10px; margin-bottom:10px; }
+.mp-h-top{ display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px; }
+.mp-h-badge{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); font-size:12px; font-weight:1000; }
+.mp-h-meta{ font-size:12px; color: rgba(255,255,255,.68); line-height:1.35; }
+.mp-h-actions{ display:flex; gap:8px; margin-top:8px; }
+.mp-h-actions button{ padding:8px 10px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); color: rgba(255,255,255,.92); font-weight:900; cursor:pointer; }
+.mp-h-actions button:hover{ background: rgba(255,255,255,.12); }
+</style><style>
+/* ===== MENSAJE IN-APP (REEMPLAZA ALERT) ===== */
+.mp-inline{
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(8px);
+  z-index: 1500;
+}
+.mp-inline.hidden{ display:none; }
+.mp-inline-card{
+  width: min(760px, 94vw);
+  background: rgba(12,14,20,.9);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 24px;
+  box-shadow: 0 40px 120px rgba(0,0,0,.6);
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 14px;
+  padding: 16px;
+}
+@media (max-width:700px){
+  .mp-inline-card{ grid-template-columns: 1fr; }
+}
+.mp-inline-media{
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+}
+.mp-inline-media img{ width:100%; height:auto; display:block; }
+.mp-inline-text{ padding: 8px 10px; }
+.mp-inline-text h4{
+  margin: 0 0 6px;
+  font-size: 16px;
+  letter-spacing:.2px;
+}
+.mp-inline-text p{
+  margin: 0 0 12px;
+  color: rgba(255,255,255,.85);
+}
+.mp-inline-text button{
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.16);
+  color: rgba(255,255,255,.92);
+  font-weight: 900;
+  cursor: pointer;
+}
+.mp-inline-text button:hover{ background: rgba(255,255,255,.22); }
+</style></head>
+<body>
+<header>
+<div class="wrap">
+<div class="top">
+<div class="brand">
+<img alt="Krystal Grand Los Cabos" class="brand-logo" src="https://res.cloudinary.com/dor6za85u/image/upload/v1765651460/Krystal_Grand_wo1rbs.jpg"/>
+<div>
+<h1>Mantenimiento Preventivo · Checklist por Habitación</h1>
+<div class="sub">Clic en una habitación → acredita puntos con ✔. Estado: rojo (sin iniciar), amarillo (incompleto), verde (completo).</div>
+</div>
+</div>
+<div class="legend">
+<div class="pill"><span class="sq rojo"></span>Rojo</div>
+<div class="pill"><span class="sq amarillo"></span>Amarillo</div>
+<div class="pill"><span class="sq verde"></span>Verde</div>
+</div>
+</div>
+</div>
+</header>
+<main>
+<div class="grid">
+<section class="card rooms">
+<h2>Habitaciones (demo)</h2>
+<div class="towers-stack" id="roomGrid">
+<section class="torre">
+<div class="torre-header"> · ALTITUDE ·</div>
+<div class="torre-sub">
+<div class="contadores">K: <span class="cnt-k">0</span> · M: <span class="cnt-m">0</span></div>
+Pisos 21 al 27</div>
+<!-- Piso 27 -->
+<div class="piso">
+<div class="piso-titulo">Piso 27</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">2701</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2702</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2703</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2704</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2705</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2706</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2707</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2708</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2709</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2710</div><div class="tipo">KG</div></div>
+</div>
+</div>
+<!-- Piso 26 -->
+<div class="piso">
+<div class="piso-titulo">Piso 26</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">2601</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2602</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2603</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2604</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2605</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2606</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2607</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2608</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2609</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2610</div><div class="tipo">KG</div></div>
+</div>
+</div>
+<!-- Piso 25 -->
+<div class="piso">
+<div class="piso-titulo">Piso 25</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">2501</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2502</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2503</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2504</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2505</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2506</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2507</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2508</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2509</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2510</div><div class="tipo">KG</div></div>
+</div>
+</div>
+<!-- Piso 24 -->
+<div class="piso">
+<div class="piso-titulo">Piso 24</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">2401</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2402</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2403</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2404</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2405</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2406</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2407</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2408</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2409</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2410</div><div class="tipo">KG</div></div>
+</div>
+</div>
+<!-- Piso 23 -->
+<div class="piso">
+<div class="piso-titulo">Piso 23</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">2301</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2302</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2303</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2304</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2305</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2306</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2307</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2308</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2309</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2310</div><div class="tipo">KG</div></div>
+</div>
+</div>
+<!-- Piso 22 -->
+<div class="piso">
+<div class="piso-titulo">Piso 22</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">2201</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2202</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2203</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2204</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2205</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2206</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2207</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2208</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2209</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2210</div><div class="tipo">KG</div></div>
+</div>
+</div>
+<!-- Piso 21 -->
+<div class="piso">
+<div class="piso-titulo">Piso 21</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">2101</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2102</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2103</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2104</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2105</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2106</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">2107</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">2108</div><div class="tipo">KG</div></div>
+</div>
+</div>
+</section>
+<!-- TORRE 2 · PALMILLA -->
+<section class="torre">
+<div class="torre-header"> · PALMILLA ·</div>
+<div class="torre-sub">
+<div class="contadores">K: <span class="cnt-k">0</span> · M: <span class="cnt-m">0</span></div>
+Pisos 11 al 16</div>
+<!-- Piso 16 -->
+<div class="piso">
+<div class="piso-titulo">Piso 16</div>
+<div class="fila">
+<div class="hab kg mp-rojo"><div class="num">1601A</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1601B</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1602</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1603A</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1603B</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1604</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1605A</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">1605B</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 15 -->
+<div class="piso">
+<div class="piso-titulo">Piso 15</div>
+<div class="fila">
+<div class="hab kg mp-rojo"><div class="num">1501A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1501B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1502</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1503A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1503B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1504</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1505A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1505B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1506</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1507A</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1507B</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 14 -->
+<div class="piso">
+<div class="piso-titulo">Piso 14</div>
+<div class="fila">
+<div class="hab kg mp-rojo"><div class="num">1401A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1401B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1402</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1403A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1403B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1404</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1405A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1405B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1406</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1407A</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1407B</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 13 -->
+<div class="piso">
+<div class="piso-titulo">Piso 13</div>
+<div class="fila">
+<div class="hab kg mp-rojo"><div class="num">1301A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1301B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1302</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1303A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1303B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1304</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1305A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1305B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1306</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1307A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1307B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1308</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1309A</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1309B</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 12 -->
+<div class="piso">
+<div class="piso-titulo">Piso 12</div>
+<div class="fila">
+<div class="hab kg mp-rojo"><div class="num">1201A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1201B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1202</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1203A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1203B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1204</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1205A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1205B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1206</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1207A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1207B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1208</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1209A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1209B</div><div class="tipo">K/D</div></div>
+</div>
+</div>
+<!-- Piso 11 -->
+<div class="piso">
+<div class="piso-titulo">Piso 11</div>
+<div class="fila">
+<div class="hab kg mp-rojo"><div class="num">1101A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1101B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1102</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1103A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1103B</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1104</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1105A</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1105B</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1106</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">1107A</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1107B</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">1108</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">1109A</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">1109B</div><div class="tipo">K/K</div></div>
+</div>
+</div>
+</section>
+<!-- TORRE 3 · UNIQUE -->
+<section class="torre unique">
+<div class="torre-header"> · UNIQUE ·</div>
+<div class="torre-sub">
+<div class="contadores">K: <span class="cnt-k">0</span> · M: <span class="cnt-m">0</span></div>
+Pisos 41 al 47 (equivalentes a 1–7)</div>
+<!-- Piso 47 -->
+<div class="piso">
+<div class="piso-titulo">Piso 47</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">4701</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4702</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4703</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4704</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4705</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4706</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4707</div><div class="tipo">PRL</div></div>
+<div class="hab mt mp-rojo"><div class="num">4709</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4710</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4711</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4712</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4714</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4715</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4716</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4717</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4718</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4719</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4720</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4721</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4722</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4723</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4724</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4725</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4726</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4727</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4728</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4729</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4730</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4731</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4732</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4733</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 46 -->
+<div class="piso">
+<div class="piso-titulo">Piso 46</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">4601</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4602</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4603</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4604</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4605</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4606</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4607</div><div class="tipo">KY KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4608</div><div class="tipo">KY KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4609</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4610</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4611</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4612</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4614</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4615</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4616</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4617</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4618</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4619</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4620</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4621</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4622</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4623</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4624</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4625</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4626</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4627</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4628</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4629</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4630</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4631</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4632</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4633</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 45 -->
+<div class="piso">
+<div class="piso-titulo">Piso 45</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">4501</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4502</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4503</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4504</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4505</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4506</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4507</div><div class="tipo">KY KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4508</div><div class="tipo">KY KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4509</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4510</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4511</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4512</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4514</div><div class="tipo">KG/CM</div></div>
+<div class="hab mt mp-rojo"><div class="num">4515</div><div class="tipo">MT/CM</div></div>
+<div class="hab kg mp-rojo"><div class="num">4516</div><div class="tipo">KG/CM</div></div>
+<div class="hab mt mp-rojo"><div class="num">4517</div><div class="tipo">MT/CM</div></div>
+<div class="hab kg mp-rojo"><div class="num">4518</div><div class="tipo">KG/CM</div></div>
+<div class="hab mt mp-rojo"><div class="num">4519</div><div class="tipo">MT/CM</div></div>
+<div class="hab mt mp-rojo"><div class="num">4520</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4521</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4522</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4523</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4524</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4525</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4526</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4527</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4528</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4529</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4530</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4531</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4532</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4533</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 44 -->
+<div class="piso">
+<div class="piso-titulo">Piso 44</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">4401</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4402</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4403</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4404</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4405</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4406</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4409</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4410</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4411</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4412</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4414</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4415</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4416</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4417</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4418</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4419</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4420</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4421</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4422</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4423</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4424</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4425</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4426</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4427</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4428</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4429</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4430</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4431</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4432</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4433</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 43 -->
+<div class="piso">
+<div class="piso-titulo">Piso 43</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">4312</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4314</div><div class="tipo">DDP</div></div>
+<div class="hab mt mp-rojo"><div class="num">4315</div><div class="tipo">MT/CM</div></div>
+<div class="hab mt mp-rojo"><div class="num">4316</div><div class="tipo">DDP</div></div>
+<div class="hab mt mp-rojo"><div class="num">4317</div><div class="tipo">MT/CM</div></div>
+<div class="hab mt mp-rojo"><div class="num">4318</div><div class="tipo">DDP</div></div>
+<div class="hab mt mp-rojo"><div class="num">4319</div><div class="tipo">MT/CM</div></div>
+<div class="hab mt mp-rojo"><div class="num">4320</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4321</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4322</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4323</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4324</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4325</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4326</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4327</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4328</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4329</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4330</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4331</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4332</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4333</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 42 -->
+<div class="piso">
+<div class="piso-titulo">Piso 42</div>
+<div class="fila">
+<div class="hab mt mp-rojo"><div class="num">4212</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4214</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4215</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4216</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4217</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4218</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4219</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4220</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4221</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4222</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4223</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4224</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4225</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4226</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4227</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4228</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4229</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4230</div><div class="tipo">MT</div></div>
+<div class="hab kg mp-rojo"><div class="num">4231</div><div class="tipo">KG</div></div>
+<div class="hab mt mp-rojo"><div class="num">4232</div><div class="tipo">MT</div></div>
+<div class="hab mt mp-rojo"><div class="num">4233</div><div class="tipo">MT</div></div>
+</div>
+</div>
+<!-- Piso 41 -->
+<div class="piso">
+<div class="piso-titulo">Piso 41 - ⋏ ALTITUDE ⋏ - </div>
+<div class="fila">
+<div class="hab kg mp-rojo"><div class="num">4112</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4114</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4115</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4116</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4117</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4118</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4119</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4120</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4121</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4122</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4123</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4124</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4125</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4126</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4127</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4128</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4129</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4130</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4131</div><div class="tipo">KG</div></div>
+<div class="hab kg mp-rojo"><div class="num">4132</div><div class="tipo">KG</div></div>
+</div>
+</div>
+</section>
+</div>
+</section>
+<aside aria-label="Panel de avance" class="mp-side" id="mpSidePanel">
+<div class="mp-side-inner">
+<div class="mp-side-head">
+<div class="mp-side-title">Panel de Avance</div>
+<div class="mp-side-sub" id="mpSideMode">General</div>
+</div>
+<div class="vuelta-strip" id="vueltaStrip">
+  <div class="vuelta-add">
+    <span class="vuelta-hint" id="vueltaHint">Libro: Vuelta 1</span>
+    <button type="button" id="btnNuevaVuelta">+ Nueva</button>
+  </div>
+</div>
+
+<div class="mp-side-body" id="mpSideBody">
+<!-- contenido inyectado -->
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Modal -->
+<div aria-hidden="true" class="mp-overlay" id="mpOverlay"></div>
+<div aria-hidden="true" aria-labelledby="mpTitle" aria-modal="true" class="mp-modal" id="mpModal" role="dialog">
+<div class="mp-modal-inner">
+<div class="mp-modal-header">
+<div class="mp-modal-title">
+<div class="mp-badge">MP</div>
+<div>
+<div class="mp-title" id="mpTitle">Mantenimiento Preventivo · Checklist</div>
+<div class="mp-sub" id="mpRoomLine">Habitación —</div>
+</div>
+</div>
+<div class="mp-modal-actions">
+<div class="mp-progress-wrap" title="Avance">
+<div class="mp-progress-bar"><div class="mp-progress-fill" id="mpProgressFill"></div></div>
+<div class="mp-progress-text" id="mpProgressText">0%</div>
+</div>
+<button class="mp-btn mp-btn-ghost" id="mpCloseBtn" type="button">Cerrar</button>
+</div>
+</div>
+<div class="mp-modal-body" id="mpChecklistBody"><div class="mp-lock-note" id="mpLockNote">🔒 Edición protegida. Marca una casilla e ingresa el NIP para guardar cambios.</div></div>
+<div class="mp-history" id="mpHistoryWrap">
+<div class="mp-history-head">
+<div class="mp-history-title">Historial de intervenciones</div>
+<div class="mp-history-sub" id="mpHistorySub">Sin registros</div>
+</div>
+<div class="mp-history-list" id="mpHistoryList"></div>
+</div>
+<div class="mp-modal-footer">
+<div class="mp-footer-left">
+<button class="mp-btn mp-btn-ghost" id="mpResetBtn" type="button">Reiniciar</button>
+<span class="mp-hint">✅ Marca cada punto. El avance cambia el color de la unidad.</span>
+</div>
+<div class="mp-footer-right">
+<button class="mp-btn mp-btn-ghost" id="mpCloseCycleBtn" type="button">Cerrar vuelta</button>
+<button class="mp-btn mp-btn-primary" id="mpSaveBtn" type="button">Guardar</button>
+</div>
+</div>
+</div>
+</div>
+<footer class="mp-footer" id="mpFooter">
+<div class="mp-footer-inner">
+<div class="mp-footer-line">
+      Formato de apoyo a la operación del Departamento de Ama de Llaves — <strong>Krystal Grand Los Cabos</strong>.
+    </div>
+<div class="mp-footer-line">
+      Responsable operativo: <strong>Luis Hernaldo</strong>, Asistente de Ama de Llaves.
+    </div>
+<div class="mp-footer-brand">JULU ©</div>
+</div>
+</footer>
+<div aria-hidden="true" class="nip-overlay" id="nipOverlay"></div>
+<div aria-hidden="true" aria-labelledby="nipTitle" aria-modal="true" class="nip-modal" id="nipModal" role="dialog">
+<div class="nip-inner">
+<div class="nip-head">
+<div class="nip-title" id="nipTitle">Acceso de registro</div>
+<button aria-label="Cerrar" class="nip-close" id="nipClose" type="button">✕</button>
+</div>
+<div class="nip-body">
+<p class="nip-text">Para <strong>modificar</strong> el avance de habitaciones, ingresa el <strong>NIP</strong>. La consulta es libre.</p>
+<div class="nip-row">
+<input autocomplete="one-time-code" class="nip-input" id="nipInput" inputmode="numeric" maxlength="12" placeholder="NIP" type="password"/>
+<button class="nip-btn" id="nipSubmit" type="button">Desbloquear</button>
+</div>
+<div class="nip-hint" id="nipHint">Tip: el acceso se mantiene en esta sesión.</div>
+</div>
+</div>
+</div>
+<div aria-hidden="true" class="mp-toast" id="mpToast">
+<div class="mp-toast-inner" id="mpToastInner">
+<div class="mp-toast-row">
+<span class="mp-toast-label" id="mpToastLabel">Listo ✅</span>
+<span class="mp-toast-icon" id="mpToastIcon">✅</span>
+</div>
+<div aria-hidden="true" class="mp-toast-bar">
+<div class="mp-toast-fill" id="mpToastFill"></div>
+</div>
+</div>
+</div>
+<script>
+(function(){
+  const NIP_CODE = "KG2026";
+  const NIP_SESSION_KEY = "mp_nip_ok";
+  // ====== SUPABASE (EVIDENCIAS EN NUBE) ======
+  // ⚠️ Usa tu "legacy anon JWT" (Settings → API Keys → Legacy anon) si tu función tiene activado:
+  // "Verify JWT with legacy secret".
+  const SUPABASE_URL = "https://sflluzcznnhdylpwfzqb.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_S93ocg5mpsn5soussv_GsQ_s7aWBNVO"; // Publishable key // ej. eyJhbGciOi...
+  const EDGE_UPLOAD_FN = "uploadEvidence";
+  const EDGE_READ_FN = "mpRead";
+  const EDGE_SYNC_FN = "mpSync";
+
+  // Guardamos el NIP en sesión (solo para mandar a la Edge Function).
+  const NIP_VALUE_KEY = "mp_nip_value";
+
+
+  const overlay = document.getElementById("mpOverlay");
+  const modal = document.getElementById("mpModal");
+  const closeBtn = document.getElementById("mpCloseBtn");
+  const saveBtn = document.getElementById("mpSaveBtn");
+  const resetBtn = document.getElementById("mpResetBtn");
+  const closeCycleBtn = document.getElementById("mpCloseCycleBtn");
+  const roomLine = document.getElementById("mpRoomLine");
+  const body = document.getElementById("mpChecklistBody");
+  const progressFill = document.getElementById("mpProgressFill");
+  const progressText = document.getElementById("mpProgressText");
+
+  const histSub = document.getElementById("mpHistorySub");
+  const histList = document.getElementById("mpHistoryList");
+
+  const sideMode = document.getElementById("mpSideMode");
+  const sideBody = document.getElementById("mpSideBody");
+
+  const nipOverlay = document.getElementById("nipOverlay");
+  const nipModal = document.getElementById("nipModal");
+  const nipClose = document.getElementById("nipClose");
+  const nipInput = document.getElementById("nipInput");
+  const nipSubmit = document.getElementById("nipSubmit");
+  const nipHint = document.getElementById("nipHint");
+
+  const toast = document.getElementById("mpToast");
+  const toastInner = document.getElementById("mpToastInner");
+  
+  let toastTimer = null;
+  let toastAnim = null;
+
+  const toastLabel = document.getElementById("mpToastLabel");
+  const toastIcon = document.getElementById("mpToastIcon");
+  const toastFill = document.getElementById("mpToastFill");
+
+  function showToast(msg){
+    // Simple toast (no barra)
+    if(toastLabel) toastLabel.textContent = msg || "Listo ✅";
+    if(toastIcon) toastIcon.textContent = "✅";
+    toast.dataset.mode = "simple";
+    if(toastFill) toastFill.style.width = "0%";
+    toast.setAttribute("aria-hidden","false");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toast.setAttribute("aria-hidden","true"), 1200);
+  }
+
+  function showToastProgress(label, durationMs, doneLabel){
+    // Toast con barra simulando carga (duración dependiente del tiempo real)
+    const dur = Math.max(450, Math.min(2600, Number(durationMs)||900));
+    const done = doneLabel || "Guardado ✅";
+    if(toastLabel) toastLabel.textContent = label || "Guardando…";
+    if(toastIcon) toastIcon.textContent = "⏳";
+    toast.dataset.mode = "progress";
+
+    toast.setAttribute("aria-hidden","false");
+    clearTimeout(toastTimer);
+    if(toastAnim) cancelAnimationFrame(toastAnim);
+
+    const start = performance.now();
+    if(toastFill) toastFill.style.width = "0%";
+
+    const tick = (t)=>{
+      const p = Math.min(1, (t - start) / dur);
+      // Curva suave para que se vea premium
+      const eased = 1 - Math.pow(1 - p, 2.2);
+      if(toastFill) toastFill.style.width = (eased * 100).toFixed(1) + "%";
+      if(p < 1){
+        toastAnim = requestAnimationFrame(tick);
+      }else{
+        // Finish
+        if(toastIcon) toastIcon.textContent = "✅";
+        if(toastLabel) toastLabel.textContent = done;
+        toast.dataset.mode = "simple"; // oculta barra para "validado"
+        toastTimer = setTimeout(()=> toast.setAttribute("aria-hidden","true"), 1100);
+      }
+    };
+    toastAnim = requestAnimationFrame(tick);
+  }
+
+
+  function isUnlocked(){ return sessionStorage.getItem(NIP_SESSION_KEY) === "1"; }
+  function lockUI(){ document.body.classList.add("mp-locked"); }
+  function unlockUI(){ document.body.classList.remove("mp-locked"); }
+
+  function openNip(){
+    nipOverlay.setAttribute("aria-hidden","false");
+    nipModal.setAttribute("aria-hidden","false");
+    nipHint.textContent = "Tip: el acceso se mantiene en esta sesión.";
+    setTimeout(()=> nipInput.focus(), 0);
+  }
+  function closeNip(){
+    nipOverlay.setAttribute("aria-hidden","true");
+    nipModal.setAttribute("aria-hidden","true");
+  }
+  function tryUnlock(){
+    const v = (nipInput.value || "").trim();
+    if(v === NIP_CODE){
+      sessionStorage.setItem(NIP_SESSION_KEY, "1");
+      sessionStorage.setItem(NIP_VALUE_KEY, v);
+      unlockUI();
+      closeNip();
+      nipInput.value = "";
+      showToast("Acceso concedido ✅");
+    }else{
+      nipHint.textContent = "NIP incorrecto. Intenta de nuevo.";
+      nipInput.select();
+      showToast("NIP incorrecto ❌");
+    }
+  }
+
+  nipOverlay.addEventListener("click", closeNip);
+  nipClose.addEventListener("click", closeNip);
+  nipSubmit.addEventListener("click", tryUnlock);
+  nipInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") tryUnlock(); });
+  document.addEventListener("keydown", (e)=>{
+    if(e.key==="Escape" && nipModal.getAttribute("aria-hidden")==="false") closeNip();
+  });
+
+  if(!isUnlocked()) lockUI();
+
+  const CHECKLIST = [
+    { key:"puerta_principal", title:"PUERTA PRINCIPAL", items:[
+      "Verificar perillas y mecanismos y reparar si es necesario",
+      "Limpieza y lubricacion de chapa (cambiar pilas si es necesario)",
+      "Revisión y limpieza de mirilla (cambiar si es necesario)",
+      "Revisión de marco de madera (cambiar si es necesario)",
+      "Revisar número de habitación",
+      "Revisar tope de puerta (cambiar si es necesario)",
+      "Cuadro de emergencia (verificar que sea el de la habitación)"
+    ]},
+    { key:"closets", title:"CLOSETS", items:[
+      "Revisión, limpieza de herrajes y rieles",
+      "Retoque de maderas internas",
+      "Ajuste de tubo",
+      "Revisión de ganchos de ropa",
+      "Retoque de pintura en paredes intenas"
+    ]},
+    { key:"bano", title:"BAÑO", items:[
+      "Revisión de juntas de tina y lavabo",
+      "Revisión y limpieza de obturador de coladera",
+      "Colocar cebolleta de regadera en cloro (15 min.)",
+      "Revisión y ajuste de manerales de tina y regadera",
+      "Revisión y ajuste de manerales de lavabo",
+      "Revisión y ajuste de tanque y asiento",
+      "Revisión y ajuste de accesorios de baño en general",
+      "Revisión y limpieza y ajuste de secadora de pelo",
+      "Revisión y retoque de puerta de baño"
+    ]},
+    { key:"habitacion", title:"HABITACIÓN", items:[
+      "Verificar y reparar contactos en caso de ser necesario",
+      "Verificar y reparar apagadores en caso de ser necesario",
+      "Verificar y reparar iluminación",
+      "Verificar y reparar cortineros (bastones, rieles y tejidos)",
+      "Verificar y reparar cancelería de aluminio y herrajes",
+      "Verificar y reparar zoclos de mármol (piezas y lechadeado)",
+      "Verificar y reparar cuadros decorativos",
+      "Retoque de pintura de muros y plafon",
+      "Revisión y retoque de mini bar",
+      "Verificar y reparar puerta interior (herrajes y maderas)",
+      "Revisión, limpieza y ajuste de ventilador"
+    ]},
+    { key:"tvmcs", title:"TELEVISOR, MINIBAR Y CAJA DE SEGURIDAD", items:[
+      "Audio (volumen minimo y máximo) Video (verificar canales nitidez)",
+      "Control remoto (verificar buen funcionamiento de teclas y baterias)",
+      "MINIBAR (verificar funcionamiento)",
+      "Verificar de caja de seguridad (cambiar pilas si es necesario)"
+    ]},
+    { key:"mobiliario", title:"MOBILIARIO", items:[
+      "Revisión y ajuste de patas de cama",
+      "Revisión y retoque de mueble de Tocador",
+      "Revisión y retoque de buro y cabeceras",
+      "Revisión y retoque de mesa y sillas de estancia",
+      "Ajuste, limpieza y lubricación de bisagras y chapas",
+      "Ajuste, limpieza y lubricación de correderas"
+    ]},
+    { key:"terraza", title:"TERRAZA", items:[
+      "Revisión y retoque de muros y plafon",
+      "Revisión y ajuste de barandal, revisar cristal",
+      "Revisión, y corrección de pintura de barandales"
+    ]},
+    { key:"fan_coil", title:"FAN AND COIL", items:[
+      "Revisión del correcto funcionamiento de termóstato",
+      "Revisar que la charola cuente con la pastilla PANMATE",
+      "Limpieza de serpentín",
+      "Limpieza y aplicación de pintura en rejillas de AC",
+      "Revisión del correcto funcionamiento de electroválvula",
+      "Revisión de motor de fan and coil",
+      "Revisión de caracoles y turbinas",
+      "Revisión del correcto funcionamiento del sensor de puerta"
+    ]}
+  ];
+  const TOTAL_CHECKS = CHECKLIST.reduce((acc,s)=> acc + s.items.length, 0);
+
+  let activeRoom = null;
+  
+  // ====== VUELTAS (LIBRO) ======
+  const STORAGE_VUELTAS = 'mp_vueltas_v1';
+  const STORAGE_VUELTA_ACTIVA = 'mp_vuelta_activa_v1';
+
+  const getVueltas = () => {
+    try{
+      const v = JSON.parse(localStorage.getItem(STORAGE_VUELTAS) || '[]');
+      return Array.isArray(v) && v.length ? v : ['Vuelta 1'];
+    } catch(e){
+      return ['Vuelta 1'];
+    }
+  };
+  const setVueltas = (arr) => localStorage.setItem(STORAGE_VUELTAS, JSON.stringify(arr));
+
+  let VUELTAS = getVueltas();
+  let VUELTA_ACTIVA = (localStorage.getItem(STORAGE_VUELTA_ACTIVA) || VUELTAS[0] || 'Vuelta 1');
+
+let activeHabEl = null;
+  let state = null;
+
+  // ====== CLOUD (Supabase) + OUTBOX OFFLINE (IndexedDB) ======
+// La nube es la fuente oficial. Si no hay internet, guardamos operaciones pendientes (OUTBOX)
+// y se sincronizan automáticamente al reconectar.
+
+function key(room){ return `mp_${VUELTA_ACTIVA}__room_${room}`; }
+function hkey(room){ return `mp_${VUELTA_ACTIVA}__room_${room}_history`; }
+function keyFor(vuelta, room){ return `mp_${vuelta}__room_${room}`; }
+function hkeyFor(vuelta, room){ return `mp_${vuelta}__room_${room}_history`; }
+
+const OUTBOX_DB = "mp_outbox_db_v1";
+const OUTBOX_STORE = "outbox";
+const CACHE_STORE = "cache";
+const SNAPSHOT_KEY = () => `snapshot__${VUELTA_ACTIVA}`;
+
+const Cloud = {
+  rooms: {},     // { [room]: stateObj }
+  history: {},   // { [room]: [entries] }
+  ready: false,
+};
+
+function sbHeaders(extra){
+  const h = {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_KEY
+  };
+  // Si alguna vez activas verify JWT en functions, puedes sumar Authorization aquí
+  if(extra) Object.assign(h, extra);
+  return h;
+}
+
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(OUTBOX_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(OUTBOX_STORE)){
+        db.createObjectStore(OUTBOX_STORE, { keyPath: "id" });
+      }
+      if(!db.objectStoreNames.contains(CACHE_STORE)){
+        db.createObjectStore(CACHE_STORE, { keyPath: "key" });
+      }
+    };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbPut(storeName, value){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).put(value);
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { const e=tx.error; db.close(); reject(e); };
+  });
+}
+async function idbGet(storeName, key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readonly");
+    const req = tx.objectStore(storeName).get(key);
+    req.onsuccess = ()=> { const v=req.result; db.close(); resolve(v); };
+    req.onerror = ()=> { const e=req.error; db.close(); reject(e); };
+  });
+}
+async function idbDelete(storeName, key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).delete(key);
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { const e=tx.error; db.close(); reject(e); };
+  });
+}
+async function idbAll(storeName){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readonly");
+    const req = tx.objectStore(storeName).getAll();
+    req.onsuccess = ()=> { const v=req.result||[]; db.close(); resolve(v); };
+    req.onerror = ()=> { const e=req.error; db.close(); reject(e); };
+  });
+}
+
+function normalizeState(obj){
+  const o = obj && typeof obj === "object" ? obj : {};
+  if(!o.checks) o.checks = {};
+  if(!o.notes) o.notes = "";
+  if(!o.evidenceText) o.evidenceText = "";
+  return o;
+}
+
+function load(room){
+  return normalizeState(Cloud.rooms[room] || { checks:{}, notes:"", evidenceText:"" });
+}
+function save(room, obj){
+  Cloud.rooms[room] = normalizeState(obj);
+  // Persistimos snapshot local solo como cache de lectura cuando no hay internet (no es registro oficial)
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
+  // Enviar a nube o encolar
+  enqueueOrSend({ action:"save_state", room, vuelta: VUELTA_ACTIVA, payload: Cloud.rooms[room] });
+}
+
+function loadHistory(room){
+  const arr = Cloud.history[room];
+  return Array.isArray(arr) ? arr : [];
+}
+function saveHistory(room, arr){
+  Cloud.history[room] = Array.isArray(arr) ? arr : [];
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
+  enqueueOrSend({ action:"save_history", room, vuelta: VUELTA_ACTIVA, payload: Cloud.history[room] });
+}
+
+async function cloudReadSnapshot(){
+  const url = `${SUPABASE_URL}/functions/v1/${EDGE_READ_FN}`;
+  const t0 = performance.now();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: sbHeaders(),
+    body: JSON.stringify({ vuelta: VUELTA_ACTIVA })
+  });
+  const ms = performance.now() - t0;
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`mpRead ${res.status}: ${txt || res.statusText}`);
+  }
+  const data = await res.json();
+  // Esperado: { rooms: { "2210": {...} }, history: { "2210": [...] } }
+  Cloud.rooms = (data && data.rooms) ? data.rooms : {};
+  Cloud.history = (data && data.history) ? data.history : {};
+  Cloud.ready = true;
+  // cache local para lectura offline
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
+  showToastProgress("Sincronizando nube…", ms, "Sincronizado ✅");
+  return data;
+}
+
+async function loadOfflineCache(){
+  try{
+    const cached = await idbGet(CACHE_STORE, SNAPSHOT_KEY());
+    if(cached && cached.value){
+      Cloud.rooms = cached.value.rooms || {};
+      Cloud.history = cached.value.history || {};
+      Cloud.ready = true;
+      showToast("Modo sin internet: usando cache ⏳");
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+function uuidv4(){
+  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  // fallback
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c=>{
+    const r = (Math.random()*16)|0, v = c=="x"? r : (r&0x3)|0x8;
+    return v.toString(16);
+  });
+}
+
+async function enqueue(op){
+  const item = {
+    id: uuidv4(),
+    createdAt: Date.now(),
+    nip: sessionStorage.getItem("mp_nip") || "",
+    ...op
+  };
+  await idbPut(OUTBOX_STORE, item);
+  updatePendingBadge();
+  return item.id;
+}
+
+async function enqueueOrSend(op){
+  // Si no hay internet, se encola.
+  if(!navigator.onLine){
+    await enqueue(op).catch(()=>{});
+    showToast("Guardado pendiente ⏳ (sin internet)");
+    return;
+  }
+  // Si hay internet pero falla, también se encola.
+  try{
+    const ms = await cloudWrite(op);
+    showToastProgress("Guardando en nube…", ms, "Guardado ✅");
+  }catch(e){
+    await enqueue(op).catch(()=>{});
+    showToast("Guardado pendiente ⏳ (error nube)");
+    console.warn("[MP] Nube falló, se encoló:", e);
+  }finally{
+    updatePendingBadge();
+  }
+}
+
+async function cloudWrite(op){
+  const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
+  const body = {
+    nip: sessionStorage.getItem("mp_nip") || "",
+    action: op.action,
+    vuelta: op.vuelta,
+    room: op.room,
+    payload: op.payload
+  };
+  const t0 = performance.now();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: sbHeaders(),
+    body: JSON.stringify(body)
+  });
+  const ms = performance.now() - t0;
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`mpSync ${res.status}: ${txt || res.statusText}`);
+  }
+  // si el servidor devuelve estado actualizado, lo absorbemos
+  const data = await res.json().catch(()=> ({}));
+  if(data && data.room && data.state){
+    Cloud.rooms[data.room] = normalizeState(data.state);
+  }
+  if(data && data.room && data.history){
+    Cloud.history[data.room] = Array.isArray(data.history) ? data.history : Cloud.history[data.room];
+  }
+  // refrescar cache
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
+  return ms;
+}
+
+async function syncOutbox(){
+  if(!navigator.onLine) return;
+  const pending = await idbAll(OUTBOX_STORE).catch(()=> []);
+  if(!pending.length) { updatePendingBadge(); return; }
+  // Orden cronológico
+  pending.sort((a,b)=> (a.createdAt||0) - (b.createdAt||0));
+
+  for(const item of pending){
+    try{
+      // Asegurar NIP actual (si no hay, no puede escribir)
+      if(!item.nip){
+        // si no hay nip en el item, intentamos el de sesión
+        item.nip = sessionStorage.getItem("mp_nip") || "";
+      }
+      // Si sigue sin nip, no podemos enviar: se queda pendiente
+      if(!item.nip){
+        updatePendingBadge();
+        return;
+      }
+      await cloudWrite(item);
+      await idbDelete(OUTBOX_STORE, item.id);
+    }catch(e){
+      console.warn("[MP] syncOutbox fallo, se reintentará:", e);
+      updatePendingBadge();
+      return; // cortamos para reintentar luego
+    }
+  }
+  updatePendingBadge();
+  // Al finalizar, refrescamos snapshot completo para pintar correctamente
+  try{ await cloudReadSnapshot(); }catch(e){}
+  repaintAll();
+}
+
+let pendingBadgeTimer = null;
+function updatePendingBadge(){
+  const el = document.getElementById("mpPendingCount");
+  if(!el) return;
+  if(pendingBadgeTimer) clearTimeout(pendingBadgeTimer);
+  pendingBadgeTimer = setTimeout(async ()=>{
+    const pending = await idbAll(OUTBOX_STORE).catch(()=> []);
+    el.textContent = String(pending.length || 0);
+    el.style.display = (pending.length ? "inline-flex" : "none");
+  }, 120);
+}
+
+function repaintAll(){
+  // Repinta todos los botones con base en Cloud.rooms (sin tocar estructura existente)
+  document.querySelectorAll(".habitacion-btn").forEach(btn=>{
+    const room = (btn.getAttribute("data-room") || btn.textContent || "").trim();
+    if(!room) return;
+    const obj = load(room);
+    const pct = percent(obj);
+    paint(btn, pct);
+  });
+}
+
+async function bootstrapCloud(){
+  // Intentar snapshot nube. Si falla, usar cache local.
+  if(navigator.onLine){
+    try{
+      await cloudReadSnapshot();
+    }catch(e){
+      console.warn("[MP] No se pudo leer nube:", e);
+      await loadOfflineCache();
+    }
+  }else{
+    await loadOfflineCache();
+  }
+  updatePendingBadge();
+  repaintAll();
+}
+
+window.addEventListener("online", ()=> { showToast("Conexión restaurada ✅ sincronizando…"); syncOutbox(); });
+window.addEventListener("offline", ()=> { showToast("Sin internet ⚠️ se guardará en cola"); });
+
+  function percent(obj){
+    const done = Object.values(obj.checks).filter(Boolean).length;
+    const pct = TOTAL_CHECKS ? Math.round((done / TOTAL_CHECKS) * 100) : 0;
+    return Math.max(0, Math.min(100, pct));
+  }
+  function paint(el, pct){
+    el.classList.remove("mp-rojo","mp-amarillo","mp-verde","mp-pulse");
+    if(pct < 20) el.classList.add("mp-rojo");
+    else if(pct >= 80) el.classList.add("mp-verde");
+    else el.classList.add("mp-amarillo","mp-pulse");
+  }
+  function setProgress(pct){
+    progressFill.style.width = `${pct}%`;
+    progressText.textContent = `${pct}%`;
+  }
+  function escapeHtml(s){
+    return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  // ====== Upload de evidencia (Storage) vía Edge Function ======
+  async function uploadEvidenceFile({ room, vuelta, file }){
+    const nip = sessionStorage.getItem(NIP_VALUE_KEY) || "";
+    if(!nip){
+      throw new Error("Sin NIP en sesión. Desbloquea e intenta de nuevo.");
+    }
+
+    const url = `${SUPABASE_URL}/functions/v1/${EDGE_UPLOAD_FN}`;
+
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("habitacion", String(room));
+    fd.append("vuelta", String(vuelta));
+    fd.append("nip", nip);
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY
+      },
+      body: fd
+    });
+
+    const text = await res.text();
+    let data = null;
+    try{ data = JSON.parse(text); }catch(e){}
+
+    if(!res.ok){
+      const msg = data?.message || data?.error || text || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+    return data || {};
+  }
+
+  function ensureEvidenceArray(st){
+    if(!st.evidences || !Array.isArray(st.evidences)) st.evidences = [];
+    return st.evidences;
+  }
+
+
+  // ====== LIBRO: Tabs de vueltas (como páginas) ======
+  function buildVueltaTabs(){
+    const strip = document.getElementById('vueltaStrip');
+    if(!strip) return;
+
+    const addBlock = strip.querySelector('.vuelta-add');
+    strip.querySelectorAll('button.vuelta-btn').forEach(b => b.remove());
+
+    const frag = document.createDocumentFragment();
+    VUELTAS.forEach(name=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'vuelta-btn' + (name === VUELTA_ACTIVA ? ' active' : '');
+      b.textContent = name;
+      b.addEventListener('click', ()=>{
+        if(name === VUELTA_ACTIVA) return;
+        VUELTA_ACTIVA = name;
+        localStorage.setItem(STORAGE_VUELTA_ACTIVA, VUELTA_ACTIVA);
+
+        // Repinta habitaciones según esta vuelta
+        document.querySelectorAll('.hab').forEach(el=>{
+          const room = el.dataset.room || el.querySelector('.num')?.textContent?.trim() || '';
+          if(!room) return;
+          paint(el, percent(load(room)));
+        });
+
+        // Si el modal está abierto, vuelve a cargar la habitación activa
+        if(activeRoom){
+          const st = load(activeRoom);
+          setProgress(percent(st));
+          renderHistory(activeRoom);
+        }
+
+        renderGeneralPanel();
+        buildVueltaTabs();
+      });
+      frag.appendChild(b);
+    });
+
+    if(addBlock) strip.insertBefore(frag, addBlock);
+    else strip.appendChild(frag);
+
+    const hint = document.getElementById('vueltaHint');
+    if(hint) hint.textContent = `Libro: ${VUELTA_ACTIVA}`;
+  }
+
+  function listAllRooms(){
+    return Array.from(document.querySelectorAll('.hab')).map(el => el.dataset.room || el.querySelector('.num')?.textContent?.trim() || '').filter(Boolean);
+  }
+
+  function clonePrevToNewVuelta(fromVuelta, toVuelta){
+    // Crea el "nuevo capítulo" en ROJO, pero guarda la última fecha previa como referencia.
+    const rooms = listAllRooms();
+    rooms.forEach(room=>{
+      let prev = null;
+      try{
+        const raw = localStorage.getItem(keyFor(fromVuelta, room));
+        if(raw) prev = JSON.parse(raw);
+      }catch(e){}
+      const prevDate = prev?.updatedAt || prev?.prevUpdatedAt || null;
+
+      const fresh = { checks:{}, notes:"", evidenceText:"" };
+      if(prevDate) fresh.prevUpdatedAt = prevDate;
+
+      localStorage.setItem(keyFor(toVuelta, room), JSON.stringify(fresh));
+      // el historial por habitación empieza vacío para la nueva vuelta
+      localStorage.setItem(hkeyFor(toVuelta, room), JSON.stringify([]));
+    });
+  }
+
+  function ensureVueltaUI(){
+    if(!VUELTAS.includes(VUELTA_ACTIVA)){
+      VUELTA_ACTIVA = VUELTAS[0] || 'Vuelta 1';
+      localStorage.setItem(STORAGE_VUELTA_ACTIVA, VUELTA_ACTIVA);
+    }
+
+    const btnNueva = document.getElementById('btnNuevaVuelta');
+    if(btnNueva && !btnNueva.dataset.bound){
+      btnNueva.dataset.bound = "1";
+      btnNueva.addEventListener('click', ()=>{
+        const nums = VUELTAS.map(v => (String(v).match(/(\d+)/)||[])[1]).filter(Boolean).map(n=>parseInt(n,10)).filter(n=>Number.isFinite(n));
+        const maxN = nums.length ? Math.max(...nums) : VUELTAS.length;
+        const nueva = `Vuelta ${maxN+1}`;
+
+        const fuente = VUELTA_ACTIVA || VUELTAS[VUELTAS.length-1] || 'Vuelta 1';
+        VUELTAS.push(nueva);
+        setVueltas(VUELTAS);
+
+        // Clonar fechas previas y reiniciar checklist (ROJO)
+        clonePrevToNewVuelta(fuente, nueva);
+
+        VUELTA_ACTIVA = nueva;
+        localStorage.setItem(STORAGE_VUELTA_ACTIVA, VUELTA_ACTIVA);
+
+        // Repintar todo a ROJO (0%)
+        document.querySelectorAll('.hab').forEach(el=>{
+          el.classList.remove("mp-rojo","mp-amarillo","mp-verde","mp-pulse");
+          el.classList.add("mp-rojo");
+        });
+
+        // Cierra modal si estaba abierto (evita estado inconsistente)
+        close();
+
+        renderGeneralPanel();
+        buildVueltaTabs();
+        showToast('ok','Nueva vuelta', `📘 ${nueva} creada. Checklist reiniciado (ROJO) conservando última fecha previa.`, 3400);
+      });
+    }
+
+    buildVueltaTabs();
+  }
+
+
+  
+  function renderHistory(room){
+    if(!histList || !histSub) return;
+    const hist = loadHistory(room);
+    if(!hist.length){
+      histSub.textContent = "Sin registros";
+      histList.innerHTML = `<div class="mp-hint">Aún no hay vueltas cerradas para esta habitación.</div>`;
+      return;
+    }
+    histSub.textContent = `${hist.length} vuelta(s) registrada(s)`;
+    histList.innerHTML = hist.slice().reverse().map((h)=>{
+      const when = new Date(h.closedAt).toLocaleString();
+      const badge = `Vuelta ${h.cycle}`;
+      const pct = `${h.finalPercent}%`;
+      const notes = (h.notes && h.notes.trim()) ? h.notes.trim() : "—";
+      const ev = (h.evidenceText && h.evidenceText.trim()) ? h.evidenceText.trim() : "—";
+      return `
+        <div class="mp-hcard" data-cycle="${h.cycle}">
+          <div class="mp-h-top">
+            <span class="mp-h-badge">${badge}</span>
+            <span class="mp-h-badge">${pct}</span>
+          </div>
+          <div class="mp-h-meta"><strong>Cerrado:</strong> ${escapeHtml(when)}</div>
+          <div class="mp-h-meta"><strong>Observaciones:</strong> ${escapeHtml(notes)}</div>
+          <div class="mp-h-meta"><strong>Evidencia:</strong> ${escapeHtml(ev)}</div>
+          <div class="mp-h-actions">
+            <button type="button" data-action="ver" data-cycle="${h.cycle}">Ver detalle</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    histList.querySelectorAll('button[data-action="ver"]').forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const cycle = btn.getAttribute("data-cycle");
+        const h = loadHistory(room).find(x => String(x.cycle) === String(cycle));
+        if(!h) return;
+        showToast(`Vuelta ${h.cycle} · ${h.finalPercent}%`);
+      });
+    });
+  }
+
+function render(){
+    body.innerHTML = "";
+    CHECKLIST.forEach(section=>{
+      const sec = document.createElement("div");
+      sec.className = "mp-section";
+      const h = document.createElement("h3");
+      h.textContent = section.title;
+      sec.appendChild(h);
+
+      const list = document.createElement("div");
+      list.className = "mp-list";
+
+      section.items.forEach((txt,i)=>{
+        const id = `${section.key}__${i+1}`;
+        const item = document.createElement("div");
+        item.className = "mp-item";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.id = id;
+        cb.checked = !!state.checks[id];
+        cb.addEventListener("change", ()=>{
+          if(!isUnlocked()){
+            cb.checked = !!state.checks[id];
+            openNip();
+            return;
+          }
+          state.checks[id] = cb.checked;
+          const pct = percent(state);
+          setProgress(pct);
+          if(activeHabEl) paint(activeHabEl, pct);
+        });
+
+        const lab = document.createElement("label");
+        lab.setAttribute("for", id);
+        lab.innerHTML = `<span class="n">${i+1}</span>${escapeHtml(txt)}`;
+
+        item.appendChild(cb);
+        item.appendChild(lab);
+        list.appendChild(item);
+      });
+
+      sec.appendChild(list);
+      body.appendChild(sec);
+    });
+
+    const sec2 = document.createElement("div");
+    sec2.className = "mp-section";
+    const h2 = document.createElement("h3");
+    h2.textContent = "OBSERVACIONES Y EVIDENCIA";
+    sec2.appendChild(h2);
+
+    const notesWrap = document.createElement("div");
+    notesWrap.className = "mp-notes";
+
+    const notes = document.createElement("textarea");
+    notes.placeholder = "Observaciones...";
+    notes.value = state.notes || "";
+    notes.addEventListener("input", ()=> state.notes = notes.value);
+
+    const evidence = document.createElement("textarea");
+    evidence.placeholder = "Subir evidencia (opcional para vista cronológica): (fotos + texto). Escribe aquí el detalle.";
+    evidence.value = state.evidenceText || "";
+    evidence.addEventListener("input", ()=> state.evidenceText = evidence.value);
+
+    notesWrap.appendChild(notes);
+    notesWrap.appendChild(evidence);
+    sec2.appendChild(notesWrap);
+
+    const upload = document.createElement("div");
+    upload.style.marginTop = "10px";
+    const file = document.createElement("input");
+    file.type = "file";
+    file.multiple = true;
+    upload.appendChild(file);
+
+    const note = document.createElement("div");
+    note.className = "mp-hint";
+    note.style.marginTop = "8px";
+    note.textContent = "📎 Evidencias: selecciona fotos/archivos y se guardarán en la nube (Supabase Storage).";
+    upload.appendChild(note);
+
+    const uploadRow = document.createElement("div");
+    uploadRow.style.display = "flex";
+    uploadRow.style.gap = "10px";
+    uploadRow.style.alignItems = "center";
+    uploadRow.style.marginTop = "10px";
+
+    const uploadBtn = document.createElement("button");
+    uploadBtn.type = "button";
+    uploadBtn.className = "mp-btn mp-btn-ghost";
+    uploadBtn.textContent = "Subir evidencias";
+    uploadRow.appendChild(uploadBtn);
+
+    const uploadStatus = document.createElement("div");
+    uploadStatus.className = "mp-hint";
+    uploadStatus.textContent = "Listo para subir.";
+    uploadRow.appendChild(uploadStatus);
+
+    upload.appendChild(uploadRow);
+
+    const uploadsList = document.createElement("div");
+    uploadsList.style.marginTop = "10px";
+    uploadsList.style.display = "grid";
+    uploadsList.style.gap = "8px";
+    upload.appendChild(uploadsList);
+
+    function renderUploads(){
+      uploadsList.innerHTML = "";
+      const evs = ensureEvidenceArray(state);
+      if(!evs.length){
+        const empty = document.createElement("div");
+        empty.className = "mp-hint";
+        empty.textContent = "Aún no hay archivos subidos para esta habitación/vuelta.";
+        uploadsList.appendChild(empty);
+        return;
+      }
+      evs.slice().reverse().forEach((e)=>{
+        const row = document.createElement("div");
+        row.style.display = "grid";
+        row.style.gridTemplateColumns = "1fr auto";
+        row.style.gap = "10px";
+        row.style.alignItems = "center";
+        row.style.padding = "10px";
+        row.style.border = "1px solid var(--border)";
+        row.style.borderRadius = "12px";
+        row.style.background = "rgba(255,255,255,.04)";
+
+        const left = document.createElement("div");
+        left.innerHTML = `<div style="font-weight:700">${escapeHtml(e.name || "Archivo")}</div>
+                          <div class="mp-hint" style="margin-top:4px; word-break:break-all">${escapeHtml(e.publicUrl || "")}</div>`;
+        row.appendChild(left);
+
+        const right = document.createElement("div");
+        const a = document.createElement("a");
+        a.href = e.publicUrl || "#";
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.className = "mp-btn mp-btn-primary";
+        a.textContent = "Abrir";
+        right.appendChild(a);
+
+        row.appendChild(right);
+        uploadsList.appendChild(row);
+      });
+    }
+
+    // Subir al dar click (o si cambian archivos y ya tienen sesión)
+    uploadBtn.addEventListener("click", async ()=>{
+      if(!activeRoom) { showToast("Selecciona una habitación primero"); return; }
+      if(!file.files || !file.files.length) { showToast("Elige archivo(s) primero"); return; }
+      if(!isUnlocked()){ openNip(); return; }
+
+      try{
+        uploadBtn.disabled = true;
+        const total = file.files.length;
+        let done = 0;
+        uploadStatus.textContent = `Subiendo ${done}/${total}...`;
+
+        const evs = ensureEvidenceArray(state);
+
+        for(const f of Array.from(file.files)){
+          const out = await uploadEvidenceFile({ room: activeRoom, vuelta: VUELTA_ACTIVA, file: f });
+          // Guardar referencia en estado local
+          evs.push({
+            name: f.name,
+            path: out.path || "",
+            publicUrl: out.publicUrl || "",
+            at: new Date().toISOString()
+          });
+          done++;
+          uploadStatus.textContent = `Subiendo ${done}/${total}...`;
+        }
+
+        save(activeRoom, state);
+        renderUploads();
+        showToast("Evidencia subida ✅");
+        // Limpia selección
+        file.value = "";
+        uploadStatus.textContent = "Listo ✅";
+      }catch(err){
+        console.error(err);
+        uploadStatus.textContent = "Error al subir.";
+        showToast(`Error: ${String(err?.message || err)}`);
+      }finally{
+        uploadBtn.disabled = false;
+      }
+    });
+
+    // Render inicial
+    renderUploads();
+
+    upload.appendChild(note);
+
+    sec2.appendChild(upload);
+    body.appendChild(sec2);
+  }
+
+  function statusFromPct(pct){
+    if(pct < 20) return {label:"Pendiente", cls:"rojo"};
+    if(pct >= 80) return {label:"Completado", cls:"verde"};
+    return {label:"En proceso", cls:"amarillo"};
+  }
+  function getTowers(){
+    return Array.from(document.querySelectorAll(".torre")).map(t=>{
+      const name = t.querySelector(".torre-header")?.textContent?.trim() || "Torre";
+      return {name, el:t};
+    });
+  }
+  function calcTowerPercent(torreEl){
+    const habs = Array.from(torreEl.querySelectorAll(".hab"));
+    if(!habs.length) return 0;
+    const pcts = habs.map(h=>{
+      const room = h.dataset.room || h.querySelector(".num")?.textContent?.trim() || "";
+      return percent(load(room));
+    });
+    return Math.round(pcts.reduce((a,b)=>a+b,0) / pcts.length);
+  }
+  function calcOverallPercent(){
+    const habs = Array.from(document.querySelectorAll(".hab"));
+    if(!habs.length) return 0;
+    const pcts = habs.map(h=>{
+      const room = h.dataset.room || h.querySelector(".num")?.textContent?.trim() || "";
+      return percent(load(room));
+    });
+    return Math.round(pcts.reduce((a,b)=>a+b,0) / pcts.length);
+  }
+  function renderGeneralPanel(){
+    const overall = calcOverallPercent();
+    const towers = getTowers().map(t => ({name:t.name, pct: calcTowerPercent(t.el)}));
+    sideMode.textContent = "General";
+    const stat = statusFromPct(overall);
+    sideBody.innerHTML = `
+      <div class="mp-kpi">
+        <h4>Avance general (todos los edificios)</h4>
+        <div class="mp-big">${overall}%</div>
+        <div class="mp-row"><small>Estatus</small><span class="mp-status-wrap">${stat.label==="En proceso" ? `<img class="mp-proc-gif" src="https://res.cloudinary.com/dor6za85u/image/upload/v1770176416/figure_painting_interior_500_clr_12696_kqzpsk.gif" alt="En proceso">` : ""}<span class="mp-chip"><span class="mp-dot ${stat.cls}"></span>${stat.label}</span></span></div>
+      </div>
+      <div class="mp-kpi">
+        <h4>Avance por torre</h4>
+        ${towers.map(t => {
+          const s = statusFromPct(t.pct);
+          return `<div class="mp-row"><span>${escapeHtml(t.name)}</span><span class="mp-chip"><span class="mp-dot ${s.cls}"></span>${t.pct}%</span></div>`;
+        }).join("")}
+      </div>
+    `;
+  }
+  function renderRoomPanel(room){
+    const st = load(room);
+    const pct = percent(st);
+    const stat = statusFromPct(pct);
+    const updated = st.updatedAt ? new Date(st.updatedAt) : null;
+    const updatedStr = updated ? updated.toLocaleString() : (st.prevUpdatedAt ? `Sin registro (última vuelta: ${new Date(st.prevUpdatedAt).toLocaleString()})` : "Sin registro aún");
+    const has = localStorage.getItem(key(room)) !== null;
+    const hist = loadHistory(room);
+    const cycles = hist.length;
+    const last = cycles ? new Date(hist[hist.length-1].closedAt) : null;
+    const lastStr = last ? last.toLocaleString() : "—";
+
+    sideMode.textContent = `Habitación ${room}`;
+    sideBody.innerHTML = `
+      <div class="mp-kpi mp-kpi-room">
+        <h4>Avance de habitación</h4>
+        <div class="mp-big">${pct}%</div>
+        ${stat.label === "En proceso" ? `<img class="mp-proceso-gif" src="https://res.cloudinary.com/dor6za85u/image/upload/v1770176416/figure_painting_interior_500_clr_12696_kqzpsk.gif" alt="">` : ""}
+        <div class="mp-row"><small>Estatus</small><span class="mp-chip"><span class="mp-dot ${stat.cls}"></span>${stat.label}</span></div>
+        <div class="mp-row"><small>Última actualización</small><span>${escapeHtml(updatedStr)}</span></div>
+      </div>
+      <div class="mp-kpi">
+        <h4>Detalle</h4>
+        <div class="mp-row"><small>Checklist</small><span>${Object.values(st.checks||{}).filter(Boolean).length}/${TOTAL_CHECKS} ✅</span></div>
+        <div class="mp-row"><small>Vueltas cerradas</small><span>${cycles}</span></div>
+        <div class="mp-row"><small>Última intervención</small><span>${escapeHtml(lastStr)}</span></div>
+        <div class="mp-row"><small>Registro</small><span>${has ? "Con datos" : "Sin proceso / sin datos"}</span></div>
+      </div>
+    `;
+  }
+  function refreshPanelAfterSave(){
+    if(activeRoom) renderRoomPanel(activeRoom);
+    else renderGeneralPanel();
+  }
+
+  function open(room, el){
+    activeRoom = room;
+    activeHabEl = el;
+    state = load(room);
+
+    roomLine.textContent = `Habitación ${room}`;
+    const pct = percent(state);
+    setProgress(pct);
+    render();
+    renderHistory(activeRoom);
+
+    overlay.setAttribute("aria-hidden","false");
+    modal.setAttribute("aria-hidden","false");
+    setTimeout(()=> closeBtn.focus(), 0);
+  }
+  function close(){
+    overlay.setAttribute("aria-hidden","true");
+    modal.setAttribute("aria-hidden","true");
+    if(activeHabEl) activeHabEl.focus?.();
+    activeRoom = null; activeHabEl = null; state = null;
+    renderGeneralPanel();
+  }
+
+  overlay.addEventListener("click", close);
+  closeBtn.addEventListener("click", close);
+  document.addEventListener("keydown", (e)=>{
+    if(e.key === "Escape" && modal.getAttribute("aria-hidden")==="false") close();
+  });
+
+  saveBtn.addEventListener("click", ()=>{
+    const __t0 = performance.now();
+    if(!activeRoom || !state) return;
+    if(!isUnlocked()){ openNip(); return; }
+    state.updatedAt = Date.now();
+    save(activeRoom, state);
+    const pct = percent(state);
+    setProgress(pct);
+    if(activeHabEl) paint(activeHabEl, pct);
+    showToastProgress("Guardando…", Math.max(650, Math.min(2200, (performance.now()-__t0)*8 + 650)), "Guardado ✅");
+    refreshPanelAfterSave();
+  });
+
+  if(closeCycleBtn){
+    closeCycleBtn.addEventListener("click", ()=>{
+      const __t0 = performance.now();
+      if(!activeRoom || !state) return;
+      if(!isUnlocked()){ openNip(); return; }
+
+      const pct = percent(state);
+      if(pct < 80){
+        showToast("⚠️ No se puede cerrar: avance mínimo 80%");
+        return;
+      }
+
+      const hist = loadHistory(activeRoom);
+      const cycle = hist.length + 1;
+      const closedAt = Date.now();
+
+      hist.push({
+        cycle,
+        closedAt,
+        finalPercent: pct,
+        notes: state.notes || "",
+        evidenceText: state.evidenceText || "",
+        checks: state.checks || {}
+      });
+      saveHistory(activeRoom, hist);
+
+      // Reinicia checklist para una nueva vuelta de ESTA habitación
+      state = { checks:{}, notes:"", evidenceText:"", prevUpdatedAt: closedAt };
+      save(activeRoom, state);
+
+      setProgress(0);
+      if(activeHabEl) paint(activeHabEl, 0);
+      render();
+      renderHistory(activeRoom);
+
+      showToastProgress("Cerrando vuelta…", Math.max(650, Math.min(2200, (performance.now()-__t0)*8 + 650)), "Vuelta cerrada ✅");
+      refreshPanelAfterSave();
+    });
+  }
+
+
+  resetBtn.addEventListener("click", ()=>{
+    if(!activeRoom) return;
+    if(!isUnlocked()){ openNip(); return; }
+    if(!confirm("¿Reiniciar checklist de esta habitación?")) return;
+    localStorage.removeItem(key(activeRoom));
+    state = { checks:{}, notes:"", evidenceText:"" };
+    render();
+    renderHistory(activeRoom);
+    setProgress(0);
+    if(activeHabEl) paint(activeHabEl, 0);
+    showToastProgress("Reiniciando…", 650, "Reiniciado ✅");
+    refreshPanelAfterSave();
+  });
+// INIT
+  ensureVueltaUI();
+  renderGeneralPanel();
+
+  document.querySelectorAll(".hab").forEach(el=>{
+    const n = el.querySelector(".num");
+    const room = n ? n.textContent.trim() : "";
+    if(!room) return;
+
+    el.dataset.room = room;
+    el.tabIndex = 0;
+
+    const st = load(room);
+    paint(el, percent(st));
+
+    el.addEventListener("click", ()=> open(room, el));
+    el.addEventListener("mouseenter", ()=> renderRoomPanel(room));
+    el.addEventListener("mouseleave", ()=> renderGeneralPanel());
+
+    el.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        open(room, el);
+      }
+    });
+  });
+
+  requestAnimationFrame(()=>{
+    const tiles = Array.from(document.querySelectorAll(".hab"));
+    tiles.forEach((t,i)=> setTimeout(()=> t.classList.add("is-in"), Math.min(900, i*6)));
+  });
+
+})();
+
+
+const mpInline = document.getElementById("mpInlineMsg");
+const mpInlineText = document.getElementById("mpInlineText");
+const mpInlineOk = document.getElementById("mpInlineOk");
+function showInlineMsg(text){
+  if(!mpInline) return;
+  mpInlineText.textContent = text || "";
+  mpInline.classList.remove("hidden");
+}
+function hideInlineMsg(){
+  mpInline.classList.add("hidden");
+}
+if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
+
+
+// ===== Boot cloud/offline sync =====
+(async ()=>{
+  try{ await bootstrapCloud(); }catch(e){ console.warn('[MP] bootstrapCloud error', e); }
+  try{ await syncOutbox(); }catch(e){ console.warn('[MP] syncOutbox error', e); }
+  setInterval(()=>{ syncOutbox().catch(()=>{}); }, 15000);
+})();
+</script>
+<!-- ===== MENSAJE EN PANTALLA (IN-APP) ===== -->
+<div aria-live="polite" class="mp-inline hidden" id="mpInlineMsg">
+<div class="mp-inline-card">
+<div class="mp-inline-media">
+<img alt="Proceso" src="https://res.cloudinary.com/dor6za85u/image/upload/v1770176416/figure_painting_interior_500_clr_12696_kqzpsk.gif"/>
+</div>
+<div class="mp-inline-text">
+<h4>Acción no permitida</h4>
+<p id="mpInlineText">Mensaje</p>
+<button id="mpInlineOk">Entendido</button>
+</div>
+</div>
+</div>
+
+  <!-- Pendientes de sincronización (OUTBOX) -->
+  <div id="mpPendingWrap" style="position:fixed;top:14px;right:14px;z-index:9999;display:flex;gap:8px;align-items:center;">
+    <span style="font-size:12px;color:rgba(255,255,255,.72);background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15);padding:6px 10px;border-radius:999px;backdrop-filter: blur(8px);">Pendientes</span>
+    <span id="mpPendingCount" style="display:none;min-width:28px;justify-content:center;align-items:center;font-weight:900;font-size:12px;color:#fff;background:rgba(255,69,69,.85);border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:999px;">0</span>
+  </div>
+
+</body>
+</html>
