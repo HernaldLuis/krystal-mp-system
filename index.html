@@ -1343,6 +1343,12 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
   const NIP_VALUE_KEY = "mp_nip_value";
 
 
+  // Compatibilidad: antes se usó "mp_nip". Mantendremos ambos.
+  const NIP_LEGACY_KEY = "mp_nip";
+  function getNip(){
+    return (sessionStorage.getItem(NIP_VALUE_KEY) || sessionStorage.getItem(NIP_LEGACY_KEY) || "").trim();
+  }
+
   const overlay = document.getElementById("mpOverlay");
   const modal = document.getElementById("mpModal");
   const closeBtn = document.getElementById("mpCloseBtn");
@@ -1441,6 +1447,7 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
     if(v === NIP_CODE){
       sessionStorage.setItem(NIP_SESSION_KEY, "1");
       sessionStorage.setItem(NIP_VALUE_KEY, v);
+      sessionStorage.setItem(NIP_LEGACY_KEY, v);
       unlockUI();
       closeNip();
       nipInput.value = "";
@@ -1580,7 +1587,8 @@ const Cloud = {
 function sbHeaders(extra){
   const h = {
     "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`
   };
   // Si alguna vez activas verify JWT en functions, puedes sumar Authorization aquí
   if(extra) Object.assign(h, extra);
@@ -1720,7 +1728,7 @@ async function enqueue(op){
   const item = {
     id: uuidv4(),
     createdAt: Date.now(),
-    nip: sessionStorage.getItem("mp_nip") || "",
+    nip: getNip(),
     ...op
   };
   await idbPut(OUTBOX_STORE, item);
@@ -1751,7 +1759,7 @@ async function enqueueOrSend(op){
 async function cloudWrite(op){
   const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
   const body = {
-    nip: sessionStorage.getItem("mp_nip") || "",
+    nip: getNip(),
     action: op.action,
     vuelta: op.vuelta,
     room: op.room,
@@ -1793,7 +1801,7 @@ async function syncOutbox(){
       // Asegurar NIP actual (si no hay, no puede escribir)
       if(!item.nip){
         // si no hay nip en el item, intentamos el de sesión
-        item.nip = sessionStorage.getItem("mp_nip") || "";
+        item.nip = getNip();
       }
       // Si sigue sin nip, no podemos enviar: se queda pendiente
       if(!item.nip){
