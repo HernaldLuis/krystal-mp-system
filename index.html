@@ -1343,12 +1343,6 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
   const NIP_VALUE_KEY = "mp_nip_value";
 
 
-  // Compatibilidad: antes se usó "mp_nip". Mantendremos ambos.
-  const NIP_LEGACY_KEY = "mp_nip";
-  function getNip(){
-    return (sessionStorage.getItem(NIP_VALUE_KEY) || sessionStorage.getItem(NIP_LEGACY_KEY) || "").trim();
-  }
-
   const overlay = document.getElementById("mpOverlay");
   const modal = document.getElementById("mpModal");
   const closeBtn = document.getElementById("mpCloseBtn");
@@ -1447,7 +1441,7 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
     if(v === NIP_CODE){
       sessionStorage.setItem(NIP_SESSION_KEY, "1");
       sessionStorage.setItem(NIP_VALUE_KEY, v);
-      sessionStorage.setItem(NIP_LEGACY_KEY, v);
+      sessionStorage.setItem("mp_nip", v);
       unlockUI();
       closeNip();
       nipInput.value = "";
@@ -1587,8 +1581,7 @@ const Cloud = {
 function sbHeaders(extra){
   const h = {
     "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY,
-    "Authorization": `Bearer ${SUPABASE_KEY}`
+    "apikey": SUPABASE_KEY
   };
   // Si alguna vez activas verify JWT en functions, puedes sumar Authorization aquí
   if(extra) Object.assign(h, extra);
@@ -1728,7 +1721,7 @@ async function enqueue(op){
   const item = {
     id: uuidv4(),
     createdAt: Date.now(),
-    nip: getNip(),
+    nip: sessionStorage.getItem(NIP_VALUE_KEY) || sessionStorage.getItem("mp_nip") || "",
     ...op
   };
   await idbPut(OUTBOX_STORE, item);
@@ -1759,7 +1752,7 @@ async function enqueueOrSend(op){
 async function cloudWrite(op){
   const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
   const body = {
-    nip: getNip(),
+    nip: sessionStorage.getItem(NIP_VALUE_KEY) || sessionStorage.getItem("mp_nip") || "",
     action: op.action,
     vuelta: op.vuelta,
     room: op.room,
@@ -1801,7 +1794,7 @@ async function syncOutbox(){
       // Asegurar NIP actual (si no hay, no puede escribir)
       if(!item.nip){
         // si no hay nip en el item, intentamos el de sesión
-        item.nip = getNip();
+        item.nip = sessionStorage.getItem(NIP_VALUE_KEY) || sessionStorage.getItem(NIP_VALUE_KEY) || sessionStorage.getItem("mp_nip") || "";
       }
       // Si sigue sin nip, no podemos enviar: se queda pendiente
       if(!item.nip){
@@ -2488,6 +2481,11 @@ function render(){
     tiles.forEach((t,i)=> setTimeout(()=> t.classList.add("is-in"), Math.min(900, i*6)));
   });
 
+  // Exponer funciones para el bootstrap externo (evita ReferenceError por scopes)
+  window.bootstrapCloud = bootstrapCloud;
+  window.syncOutbox = syncOutbox;
+  window.__mp_get_nip = () => (sessionStorage.getItem(NIP_VALUE_KEY) || sessionStorage.getItem("mp_nip") || "").trim();
+
 })();
 
 
@@ -2505,12 +2503,17 @@ function hideInlineMsg(){
 if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
 
 
-// ===== Boot cloud/offline sync =====
-(async ()=>{
-  try{ await bootstrapCloud(); }catch(e){ console.warn('[MP] bootstrapCloud error', e); }
-  try{ await syncOutbox(); }catch(e){ console.warn('[MP] syncOutbox error', e); }
-  setInterval(()=>{ syncOutbox().catch(()=>{}); }, 15000);
-})();
+// ===== Boot cloud/offline sync (safe) =====
+document.addEventListener("DOMContentLoaded", ()=>{
+  const run = async ()=>{
+    try{ if (typeof window.bootstrapCloud === "function") await window.bootstrapCloud(); }
+    catch(e){ console.warn('[MP] bootstrapCloud error', e); }
+    try{ if (typeof window.syncOutbox === "function") await window.syncOutbox(); }
+    catch(e){ console.warn('[MP] syncOutbox error', e); }
+  };
+  run();
+  setInterval(()=>{ if (typeof window.syncOutbox === "function") window.syncOutbox().catch(()=>{}); }, 15000);
+});
 </script>
 <!-- ===== MENSAJE EN PANTALLA (IN-APP) ===== -->
 <div aria-live="polite" class="mp-inline hidden" id="mpInlineMsg">
