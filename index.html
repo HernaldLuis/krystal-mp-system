@@ -2569,5 +2569,40 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 </script>
+
+<script>
+/* === PARCHE DEFINITIVO NIP (FORZADO) ===
+   Garantiza que el NIP se guarde SIEMPRE al desbloquear
+*/
+document.addEventListener("DOMContentLoaded", () => {
+  const nipInput = document.getElementById("nipInput");
+  if (!nipInput) return;
+
+  function forceSaveNip(){
+    const v = nipInput.value.trim();
+    if(!v) return;
+    sessionStorage.setItem("mp_nip", v);
+    sessionStorage.setItem("mp_nip_value", v);
+    localStorage.setItem("MP_NIP", v);
+    window.MP_NIP = v;
+    console.log("[MP] NIP forzado y guardado:", v);
+  }
+
+  // cualquier interacción relevante
+  nipInput.addEventListener("input", forceSaveNip);
+  nipInput.addEventListener("change", forceSaveNip);
+  nipInput.addEventListener("blur", forceSaveNip);
+
+  // por si hay botón de desbloqueo
+  document.querySelectorAll("button").forEach(btn => {
+    if (btn.textContent.toLowerCase().includes("nip") ||
+        btn.textContent.toLowerCase().includes("desblo")) {
+      btn.addEventListener("click", forceSaveNip);
+    }
+  });
+
+});
+</script>
+
 </body>
 </html>
