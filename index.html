@@ -1344,12 +1344,18 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
 
 // === NIP helpers (evita nip vacío en mpSync) ===
 function getNipActual(){
-  // Cloud-only: no persistimos NIP en localStorage/sessionStorage.
-  return String(window.MP_NIP || "").trim();
+  return (
+    (sessionStorage.getItem("mp_nip_value") || "").trim() ||
+    (sessionStorage.getItem("mp_nip") || "").trim() ||
+    (localStorage.getItem("MP_NIP") || "").trim()
+  );
 }
 function setNipActual(nip){
   const v = String(nip || "").trim();
   if(!v) return;
+  sessionStorage.setItem("mp_nip_value", v);
+  sessionStorage.setItem("mp_nip", v);
+  localStorage.setItem("MP_NIP", v);
   window.MP_NIP = v;
 }
 window.getNipActual = getNipActual;
@@ -1443,8 +1449,7 @@ window.setNipActual = setNipActual;
   }
 
 
-  let MP_UNLOCKED = false;
-  function isUnlocked(){ return MP_UNLOCKED === true; }
+  function isUnlocked(){ return sessionStorage.getItem(NIP_SESSION_KEY) === "1"; }
   function lockUI(){ document.body.classList.add("mp-locked"); }
   function unlockUI(){ document.body.classList.remove("mp-locked"); }
 
@@ -1461,8 +1466,9 @@ window.setNipActual = setNipActual;
   function tryUnlock(){
     const v = (nipInput.value || "").trim();
     if(v === NIP_CODE){
-      MP_UNLOCKED = true;
-      setNipActual(v);
+      sessionStorage.setItem(NIP_SESSION_KEY, "1");
+      sessionStorage.setItem(NIP_VALUE_KEY, v);
+      sessionStorage.setItem("mp_nip", v); // compat: usado por cloudWrite()
       unlockUI();
       closeNip();
       nipInput.value = "";
@@ -1560,49 +1566,169 @@ window.setNipActual = setNipActual;
   let activeRoom = null;
   
   // ====== VUELTAS (LIBRO) ======
-  // Cloud-only: la lista de vueltas y la vuelta activa deben venir de la nube (mpRead).
-  // Fallback local (solo en memoria) si la nube aún no devuelve libro.
-  let VUELTAS = ['Vuelta 1'];
-  let VUELTA_ACTIVA = 'Vuelta 1';
+  const STORAGE_VUELTAS = 'mp_vueltas_v1';
+  const STORAGE_VUELTA_ACTIVA = 'mp_vuelta_activa_v1';
 
-  let activeHabEl = null;
+  const getVueltas = () => {
+    try{
+      const v = JSON.parse(localStorage.getItem(STORAGE_VUELTAS) || '[]');
+      return Array.isArray(v) && v.length ? v : ['Vuelta 1'];
+    } catch(e){
+      return ['Vuelta 1'];
+    }
+  };
+  const setVueltas = (arr) => localStorage.setItem(STORAGE_VUELTAS, JSON.stringify(arr));
+
+  let VUELTAS = getVueltas();
+  let VUELTA_ACTIVA = (localStorage.getItem(STORAGE_VUELTA_ACTIVA) || VUELTAS[0] || 'Vuelta 1');
+
+let activeHabEl = null;
   let state = null;
 
-  // ====== CLOUD (Supabase) · CLOUD-ONLY ======
-const Cloud = { rooms:{}, history:{}, ready:false };
+  // ====== CLOUD (Supabase) + OUTBOX OFFLINE (IndexedDB) ======
 
-function normalizeState(o){
-  o = o || {};
-  if(!o.checks || typeof o.checks !== "object") o.checks = {};
-  if(typeof o.notes !== "string") o.notes = (o.notes == null ? "" : String(o.notes));
-  if(typeof o.evidenceText !== "string") o.evidenceText = (o.evidenceText == null ? "" : String(o.evidenceText));
-  if(!Array.isArray(o.evidences)) o.evidences = Array.isArray(o.evidences) ? o.evidences : [];
-  if(!o.updatedAt) o.updatedAt = null;
-  if(!o.prevUpdatedAt) o.prevUpdatedAt = null;
+// === Migración OUTBOX (evita reintentos eternos con items viejos sin campos) ===
+const OUTBOX_SCHEMA_KEY = "mp_outbox_schema_v1";
+const OUTBOX_SCHEMA_VER = "2";
+async function migrateOutboxSchema(){
+  try{
+    const cur = localStorage.getItem(OUTBOX_SCHEMA_KEY);
+    if(cur === OUTBOX_SCHEMA_VER) return;
+    localStorage.setItem(OUTBOX_SCHEMA_KEY, OUTBOX_SCHEMA_VER);
+    // Limpia outbox viejo (estructura anterior)
+    await idbClear(OUTBOX_STORE);
+    // Actualiza badge si existe
+    if (typeof updatePendingBadge === "function") updatePendingBadge(0);
+    if (typeof setPendingCount === "function") setPendingCount(0);
+    console.warn("[MP] OUTBOX migrado: se limpió outbox viejo para evitar 400 por schema.");
+  }catch(e){
+    console.warn("[MP] migrateOutboxSchema error:", e);
+  }
+}
+
+// La nube es la fuente oficial. Si no hay internet, guardamos operaciones pendientes (OUTBOX)
+// y se sincronizan automáticamente al reconectar.
+
+function key(room){ return `mp_${VUELTA_ACTIVA}__room_${room}`; }
+function hkey(room){ return `mp_${VUELTA_ACTIVA}__room_${room}_history`; }
+function keyFor(vuelta, room){ return `mp_${vuelta}__room_${room}`; }
+function hkeyFor(vuelta, room){ return `mp_${vuelta}__room_${room}_history`; }
+
+const OUTBOX_DB = "mp_outbox_db_v1";
+const OUTBOX_STORE = "outbox";
+const CACHE_STORE = "cache";
+const SNAPSHOT_KEY = () => `snapshot__${VUELTA_ACTIVA}`;
+
+const Cloud = {
+  rooms: {},     // { [room]: stateObj }
+  history: {},   // { [room]: [entries] }
+  ready: false,
+};
+
+function sbHeaders(extra){
+  const h = {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`
+  };
+  if(extra) Object.assign(h, extra);
+  return h;
+}
+
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(OUTBOX_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(OUTBOX_STORE)){
+        db.createObjectStore(OUTBOX_STORE, { keyPath: "id" });
+      }
+      if(!db.objectStoreNames.contains(CACHE_STORE)){
+        db.createObjectStore(CACHE_STORE, { keyPath: "key" });
+      }
+    };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbPut(storeName, value){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).put(value);
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { const e=tx.error; db.close(); reject(e); };
+  });
+}
+async function idbGet(storeName, key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readonly");
+    const req = tx.objectStore(storeName).get(key);
+    req.onsuccess = ()=> { const v=req.result; db.close(); resolve(v); };
+    req.onerror = ()=> { const e=req.error; db.close(); reject(e); };
+  });
+}
+async function idbDelete(storeName, key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).delete(key);
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { const e=tx.error; db.close(); reject(e); };
+  });
+}
+
+async function idbClear(storeName){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readwrite");
+    const req = tx.objectStore(storeName).clear();
+    req.onsuccess = ()=>{};
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { const e=tx.error; db.close(); reject(e); };
+  });
+}
+async function idbAll(storeName){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readonly");
+    const req = tx.objectStore(storeName).getAll();
+    req.onsuccess = ()=> { const v=req.result||[]; db.close(); resolve(v); };
+    req.onerror = ()=> { const e=req.error; db.close(); reject(e); };
+  });
+}
+
+function normalizeState(obj){
+  const o = obj && typeof obj === "object" ? obj : {};
+  if(!o.checks) o.checks = {};
+  if(!o.notes) o.notes = "";
+  if(!o.evidenceText) o.evidenceText = "";
   return o;
 }
 
 function load(room){
   return normalizeState(Cloud.rooms[room] || { checks:{}, notes:"", evidenceText:"" });
 }
+function save(room, obj){
+  Cloud.rooms[room] = normalizeState(obj);
+  // Persistimos snapshot local solo como cache de lectura cuando no hay internet (no es registro oficial)
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
+  // Enviar a nube o encolar
+  enqueueOrSend({ action:"save_state", room, habitacion: room,
+      vuelta: VUELTA_ACTIVA, payload: Cloud.rooms[room] });
+}
 
 function loadHistory(room){
   const arr = Cloud.history[room];
   return Array.isArray(arr) ? arr : [];
 }
-
-async function save(room, obj){
-  Cloud.rooms[room] = normalizeState(obj);
-  const ms = await cloudWrite({ action:"save_state", room, habitacion: room, vuelta: VUELTA_ACTIVA, payload: Cloud.rooms[room] });
-  showToastProgress("Guardando en nube…", ms, "Guardado ✅");
-}
-
-async function saveHistory(room, arr){
+function saveHistory(room, arr){
   Cloud.history[room] = Array.isArray(arr) ? arr : [];
-  const ms = await cloudWrite({ action:"save_history", room, habitacion: room, vuelta: VUELTA_ACTIVA, payload: Cloud.history[room] });
-  showToastProgress("Guardando historial…", ms, "Historial ✅");
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
+  enqueueOrSend({ action:"save_history", room, habitacion: room,
+      vuelta: VUELTA_ACTIVA, payload: Cloud.history[room] });
 }
-
 
 async function cloudReadSnapshot(){
   const url = `${SUPABASE_URL}/functions/v1/${EDGE_READ_FN}`;
@@ -1617,33 +1743,84 @@ async function cloudReadSnapshot(){
     const txt = await res.text().catch(()=> "");
     throw new Error(`mpRead ${res.status}: ${txt || res.statusText}`);
   }
-  const data = await res.json().catch(()=> ({}));
-
-  // Esperado: { rooms: {...}, history:{...}, vueltas:[...], vuelta_activa:"Vuelta 1" }
+  const data = await res.json();
+  // Esperado: { rooms: { "2210": {...} }, history: { "2210": [...] } }
   Cloud.rooms = (data && data.rooms) ? data.rooms : {};
   Cloud.history = (data && data.history) ? data.history : {};
-  if(Array.isArray(data?.vueltas) && data.vueltas.length){
-    VUELTAS = data.vueltas.map(v=>String(v));
-  }
-  if(typeof data?.vuelta_activa === "string" && data.vuelta_activa.trim()){
-    VUELTA_ACTIVA = data.vuelta_activa.trim();
-  }
   Cloud.ready = true;
-
+  // cache local para lectura offline
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
   showToastProgress("Sincronizando nube…", ms, "Sincronizado ✅");
   return data;
 }
 
-async function cloudWrite(op){
+async function loadOfflineCache(){
+  try{
+    const cached = await idbGet(CACHE_STORE, SNAPSHOT_KEY());
+    if(cached && cached.value){
+      Cloud.rooms = cached.value.rooms || {};
+      Cloud.history = cached.value.history || {};
+      Cloud.ready = true;
+      showToast("Modo sin internet: usando cache ⏳");
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+function uuidv4(){
+  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  // fallback
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c=>{
+    const r = (Math.random()*16)|0, v = c=="x"? r : (r&0x3)|0x8;
+    return v.toString(16);
+  });
+}
+
+async function enqueue(op){
+  const item = {
+    id: uuidv4(),
+    createdAt: Date.now(),
+    nip: getNipActual(),
+    ...op
+  };
+  await idbPut(OUTBOX_STORE, item);
+  updatePendingBadge();
+  return item.id;
+}
+
+async function enqueueOrSend(op){
+  // Si no hay internet, se encola.
   if(!navigator.onLine){
-    throw new Error("Sin internet. Cloud-only: no se guarda local.");
+    await enqueue(op).catch(()=>{});
+    showToast("Guardado pendiente ⏳ (sin internet)");
+    return;
   }
+  // Si hay internet pero falla, también se encola.
+  try{
+    const ms = await cloudWrite(op);
+    showToastProgress("Guardando en nube…", ms, "Guardado ✅");
+  }catch(e){
+    await enqueue(op).catch(()=>{});
+    showToast("Guardado pendiente ⏳ (error nube)");
+    console.warn("[MP] Nube falló, se encoló:", e);
+  }finally{
+    updatePendingBadge();
+  }
+}
 
+async function cloudWrite(op){
+  
+    
   const room = String(op?.habitacion || op?.room || "").trim();
-  const vuelta = String(op?.vuelta || VUELTA_ACTIVA || "").trim();
-  if (!vuelta || !room) throw new Error("Falta vuelta o habitación (cliente)");
+  const vuelta = String(op?.vuelta || "").trim();
+// Guard cliente: evita encolar cosas sin vuelta/habitación
+    if (!vuelta || !room) {
+      console.warn("[MP] Falta vuelta o habitación (cliente). room:", room, "vuelta:", vuelta);
+      throw new Error("Falta vuelta o habitación (cliente)");
+    }
 
-  const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
+const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
   const body = {
     nip: getNipActual(),
     action: (String(op?.action || "").trim() || "save_state"),
@@ -1653,7 +1830,6 @@ async function cloudWrite(op){
     state: op?.payload ?? {},
     payload: op?.payload ?? {}
   };
-
   const t0 = performance.now();
   const res = await fetch(url, {
     method: "POST",
@@ -1661,12 +1837,11 @@ async function cloudWrite(op){
     body: JSON.stringify(body)
   });
   const ms = performance.now() - t0;
-
   if(!res.ok){
     const txt = await res.text().catch(()=> "");
     throw new Error(`mpSync ${res.status}: ${txt || res.statusText}`);
   }
-
+  // si el servidor devuelve estado actualizado, lo absorbemos
   const data = await res.json().catch(()=> ({}));
   if(data && data.room && data.state){
     Cloud.rooms[data.room] = normalizeState(data.state);
@@ -1674,47 +1849,89 @@ async function cloudWrite(op){
   if(data && data.room && data.history){
     Cloud.history[data.room] = Array.isArray(data.history) ? data.history : Cloud.history[data.room];
   }
+  // refrescar cache
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
   return ms;
 }
 
+async function syncOutbox(){
+  if(!navigator.onLine) return;
+  const pending = await idbAll(OUTBOX_STORE).catch(()=> []);
+  if(!pending.length) { updatePendingBadge(); return; }
+  // Orden cronológico
+  pending.sort((a,b)=> (a.createdAt||0) - (b.createdAt||0));
+
+  for(const item of pending){
+    try{
+      // Asegurar NIP actual (si no hay, no puede escribir)
+      if(!item.nip){
+        // si no hay nip en el item, intentamos el de sesión
+        item.nip = sessionStorage.getItem("mp_nip") || "";
+      }
+      // Si sigue sin nip, no podemos enviar: se queda pendiente
+      if(!item.nip){
+        updatePendingBadge();
+        return;
+      }
+      await cloudWrite(item);
+      await idbDelete(OUTBOX_STORE, item.id);
+    }catch(e){
+      console.warn("[MP] syncOutbox fallo, se reintentará:", e);
+      updatePendingBadge();
+      return; // cortamos para reintentar luego
+    }
+  }
+  updatePendingBadge();
+  // Al finalizar, refrescamos snapshot completo para pintar correctamente
+  try{ await cloudReadSnapshot(); }catch(e){}
+  repaintAll();
+}
+
+window.syncOutbox = syncOutbox;
+
+let pendingBadgeTimer = null;
+function updatePendingBadge(){
+  const el = document.getElementById("mpPendingCount");
+  if(!el) return;
+  if(pendingBadgeTimer) clearTimeout(pendingBadgeTimer);
+  pendingBadgeTimer = setTimeout(async ()=>{
+    const pending = await idbAll(OUTBOX_STORE).catch(()=> []);
+    el.textContent = String(pending.length || 0);
+    el.style.display = (pending.length ? "inline-flex" : "none");
+  }, 120);
+}
+
 function repaintAll(){
-  // Repinta todos los tiles con base en Cloud.rooms
-  document.querySelectorAll(".hab").forEach(el=>{
-    const room = el.dataset.room || el.querySelector(".num")?.textContent?.trim() || "";
+  // Repinta todos los botones con base en Cloud.rooms (sin tocar estructura existente)
+  document.querySelectorAll(".habitacion-btn").forEach(btn=>{
+    const room = (btn.getAttribute("data-room") || btn.textContent || "").trim();
     if(!room) return;
     const obj = load(room);
     const pct = percent(obj);
-    paint(el, pct);
+    paint(btn, pct);
   });
 }
 
 async function bootstrapCloud(){
-  // Cloud-only: si no hay internet, solo se muestra (sin guardar) y sin cache local.
-  const badge = document.getElementById("mpPendingCount");
-  if(badge) badge.style.display = "none";
-
-  if(!navigator.onLine){
-    Cloud.rooms = {};
-    Cloud.history = {};
-    Cloud.ready = true;
-    repaintAll();
-    showToast("Sin internet ⚠️ Cloud-only: no se guardará nada.");
-    return;
+  // Intentar snapshot nube. Si falla, usar cache local.
+  if(navigator.onLine){
+    try{
+      await cloudReadSnapshot();
+    }catch(e){
+      console.warn("[MP] No se pudo leer nube:", e);
+      await loadOfflineCache();
+    }
+  }else{
+    await loadOfflineCache();
   }
-
-  await cloudReadSnapshot();
+  updatePendingBadge();
   repaintAll();
 }
 
-window.addEventListener("online", async ()=> {
-  showToast("Conexión restaurada ✅ sincronizando…");
-  try{ await cloudReadSnapshot(); repaintAll(); }catch(e){ console.warn(e); }
-});
-window.addEventListener("offline", ()=> {
-  showToast("Sin internet ⚠️ Cloud-only: no se guardará nada.");
-});
+window.addEventListener("online", ()=> { showToast("Conexión restaurada ✅ sincronizando…"); syncOutbox(); });
+window.addEventListener("offline", ()=> { showToast("Sin internet ⚠️ se guardará en cola"); });
 
-function percent(obj){
+  function percent(obj){
     const done = Object.values(obj.checks).filter(Boolean).length;
     const pct = TOTAL_CHECKS ? Math.round((done / TOTAL_CHECKS) * 100) : 0;
     return Math.max(0, Math.min(100, pct));
@@ -1735,7 +1952,7 @@ function percent(obj){
 
   // ====== Upload de evidencia (Storage) vía Edge Function ======
   async function uploadEvidenceFile({ room, vuelta, file }){
-    const nip = getNipActual();
+    const nip = sessionStorage.getItem(NIP_VALUE_KEY) || "";
     if(!nip){
       throw new Error("Sin NIP en sesión. Desbloquea e intenta de nuevo.");
     }
@@ -1774,7 +1991,6 @@ function percent(obj){
 
 
   // ====== LIBRO: Tabs de vueltas (como páginas) ======
-    // ====== LIBRO: Tabs de vueltas (CLOUD-ONLY) ======
   function buildVueltaTabs(){
     const strip = document.getElementById('vueltaStrip');
     if(!strip) return;
@@ -1788,25 +2004,27 @@ function percent(obj){
       b.type = 'button';
       b.className = 'vuelta-btn' + (name === VUELTA_ACTIVA ? ' active' : '');
       b.textContent = name;
-      b.addEventListener('click', async ()=>{
+      b.addEventListener('click', ()=>{
         if(name === VUELTA_ACTIVA) return;
         VUELTA_ACTIVA = name;
+        localStorage.setItem(STORAGE_VUELTA_ACTIVA, VUELTA_ACTIVA);
 
-        // Leer snapshot de la nube para esta vuelta y repintar
-        try{
-          await cloudReadSnapshot();
-          repaintAll();
-          if(activeRoom){
-            const st = load(activeRoom);
-            setProgress(percent(st));
-            renderHistory(activeRoom);
-          }
-          renderGeneralPanel();
-          buildVueltaTabs();
-        }catch(e){
-          console.warn(e);
-          showToast("No se pudo cambiar de vuelta (nube) ⚠️");
+        // Repinta habitaciones según esta vuelta
+        document.querySelectorAll('.hab').forEach(el=>{
+          const room = el.dataset.room || el.querySelector('.num')?.textContent?.trim() || '';
+          if(!room) return;
+          paint(el, percent(load(room)));
+        });
+
+        // Si el modal está abierto, vuelve a cargar la habitación activa
+        if(activeRoom){
+          const st = load(activeRoom);
+          setProgress(percent(st));
+          renderHistory(activeRoom);
         }
+
+        renderGeneralPanel();
+        buildVueltaTabs();
       });
       frag.appendChild(b);
     });
@@ -1819,56 +2037,74 @@ function percent(obj){
   }
 
   function listAllRooms(){
-    return Array.from(document.querySelectorAll('.hab'))
-      .map(el => el.dataset.room || el.querySelector('.num')?.textContent?.trim() || '')
-      .filter(Boolean);
+    return Array.from(document.querySelectorAll('.hab')).map(el => el.dataset.room || el.querySelector('.num')?.textContent?.trim() || '').filter(Boolean);
   }
 
-  async function persistBook(){
-    // Intento 1: guardar como “room” especial (compatibilidad sin tocar backend)
-    try{
-      await cloudWrite({ action: "save_book", room: "__BOOK__", habitacion: "__BOOK__", vuelta: VUELTA_ACTIVA,
-        payload: { vueltas: VUELTAS, vuelta_activa: VUELTA_ACTIVA } });
-    }catch(e){
-      // Si el backend no soporta el action, no tiramos la UI
-      console.warn("[MP] persistBook fallo:", e);
-    }
+  function clonePrevToNewVuelta(fromVuelta, toVuelta){
+    // Crea el "nuevo capítulo" en ROJO, pero guarda la última fecha previa como referencia.
+    const rooms = listAllRooms();
+    rooms.forEach(room=>{
+      let prev = null;
+      try{
+        const raw = localStorage.getItem(keyFor(fromVuelta, room));
+        if(raw) prev = JSON.parse(raw);
+      }catch(e){}
+      const prevDate = prev?.updatedAt || prev?.prevUpdatedAt || null;
+
+      const fresh = { checks:{}, notes:"", evidenceText:"" };
+      if(prevDate) fresh.prevUpdatedAt = prevDate;
+
+      localStorage.setItem(keyFor(toVuelta, room), JSON.stringify(fresh));
+      // el historial por habitación empieza vacío para la nueva vuelta
+      localStorage.setItem(hkeyFor(toVuelta, room), JSON.stringify([]));
+    });
   }
 
   function ensureVueltaUI(){
+    if(!VUELTAS.includes(VUELTA_ACTIVA)){
+      VUELTA_ACTIVA = VUELTAS[0] || 'Vuelta 1';
+      localStorage.setItem(STORAGE_VUELTA_ACTIVA, VUELTA_ACTIVA);
+    }
+
     const btnNueva = document.getElementById('btnNuevaVuelta');
     if(btnNueva && !btnNueva.dataset.bound){
       btnNueva.dataset.bound = "1";
-      btnNueva.addEventListener('click', async ()=>{
+      btnNueva.addEventListener('click', ()=>{
         const nums = VUELTAS.map(v => (String(v).match(/(\d+)/)||[])[1]).filter(Boolean).map(n=>parseInt(n,10)).filter(n=>Number.isFinite(n));
         const maxN = nums.length ? Math.max(...nums) : VUELTAS.length;
         const nueva = `Vuelta ${maxN+1}`;
 
         const fuente = VUELTA_ACTIVA || VUELTAS[VUELTAS.length-1] || 'Vuelta 1';
-        VUELTAS = [...VUELTAS, nueva];
+        VUELTAS.push(nueva);
+        setVueltas(VUELTAS);
+
+        // Clonar fechas previas y reiniciar checklist (ROJO)
+        clonePrevToNewVuelta(fuente, nueva);
+
         VUELTA_ACTIVA = nueva;
+        localStorage.setItem(STORAGE_VUELTA_ACTIVA, VUELTA_ACTIVA);
 
-        // Pedir a backend crear vuelta (si existe la lógica); si no existe, mpRead devolverá vacío.
-        try{
-          await cloudWrite({ action: "create_vuelta", room: "__BOOK__", habitacion: "__BOOK__", vuelta: nueva,
-            payload: { from: fuente, to: nueva } });
-        }catch(e){
-          console.warn("[MP] create_vuelta no soportado:", e);
-        }
+        // Repintar todo a ROJO (0%)
+        document.querySelectorAll('.hab').forEach(el=>{
+          el.classList.remove("mp-rojo","mp-amarillo","mp-verde","mp-pulse");
+          el.classList.add("mp-rojo");
+        });
 
-        await persistBook();
+        // Cierra modal si estaba abierto (evita estado inconsistente)
         close();
-        try{ await cloudReadSnapshot(); }catch(e){}
-        repaintAll();
+
         renderGeneralPanel();
         buildVueltaTabs();
-        showToast('ok','Nueva vuelta', `📘 ${nueva} creada (cloud-only).`, 3200);
+        showToast('ok','Nueva vuelta', `📘 ${nueva} creada. Checklist reiniciado (ROJO) conservando última fecha previa.`, 3400);
       });
     }
 
     buildVueltaTabs();
   }
-function renderHistory(room){
+
+
+  
+  function renderHistory(room){
     if(!histList || !histSub) return;
     const hist = loadHistory(room);
     if(!hist.length){
@@ -2085,7 +2321,7 @@ function render(){
           uploadStatus.textContent = `Subiendo ${done}/${total}...`;
         }
 
-        await save(activeRoom, state);
+        save(activeRoom, state);
         renderUploads();
         showToast("Evidencia subida ✅");
         // Limpia selección
@@ -2164,7 +2400,7 @@ function render(){
     const stat = statusFromPct(pct);
     const updated = st.updatedAt ? new Date(st.updatedAt) : null;
     const updatedStr = updated ? updated.toLocaleString() : (st.prevUpdatedAt ? `Sin registro (última vuelta: ${new Date(st.prevUpdatedAt).toLocaleString()})` : "Sin registro aún");
-    const has = !!Cloud.rooms[room];
+    const has = localStorage.getItem(key(room)) !== null;
     const hist = loadHistory(room);
     const cycles = hist.length;
     const last = cycles ? new Date(hist[hist.length-1].closedAt) : null;
@@ -2222,12 +2458,12 @@ function render(){
     if(e.key === "Escape" && modal.getAttribute("aria-hidden")==="false") close();
   });
 
-  saveBtn.addEventListener("click", async ()=>{
+  saveBtn.addEventListener("click", ()=>{
     const __t0 = performance.now();
     if(!activeRoom || !state) return;
     if(!isUnlocked()){ openNip(); return; }
     state.updatedAt = Date.now();
-    await save(activeRoom, state);
+    save(activeRoom, state);
     const pct = percent(state);
     setProgress(pct);
     if(activeHabEl) paint(activeHabEl, pct);
@@ -2236,7 +2472,7 @@ function render(){
   });
 
   if(closeCycleBtn){
-    closeCycleBtn.addEventListener("click", async ()=>{
+    closeCycleBtn.addEventListener("click", ()=>{
       const __t0 = performance.now();
       if(!activeRoom || !state) return;
       if(!isUnlocked()){ openNip(); return; }
@@ -2259,11 +2495,11 @@ function render(){
         evidenceText: state.evidenceText || "",
         checks: state.checks || {}
       });
-      await saveHistory(activeRoom, hist);
+      saveHistory(activeRoom, hist);
 
       // Reinicia checklist para una nueva vuelta de ESTA habitación
       state = { checks:{}, notes:"", evidenceText:"", prevUpdatedAt: closedAt };
-      await save(activeRoom, state);
+      save(activeRoom, state);
 
       setProgress(0);
       if(activeHabEl) paint(activeHabEl, 0);
@@ -2276,12 +2512,12 @@ function render(){
   }
 
 
-  resetBtn.addEventListener("click", async ()=>{
+  resetBtn.addEventListener("click", ()=>{
     if(!activeRoom) return;
     if(!isUnlocked()){ openNip(); return; }
     if(!confirm("¿Reiniciar checklist de esta habitación?")) return;
+    localStorage.removeItem(key(activeRoom));
     state = { checks:{}, notes:"", evidenceText:"" };
-    await save(activeRoom, state);
     render();
     renderHistory(activeRoom);
     setProgress(0);
@@ -2340,7 +2576,9 @@ if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
 
 // ===== Boot cloud/offline sync =====
 (async ()=>{
-  try{ await bootstrapCloud(); }catch(e){ console.warn("[MP] bootstrapCloud error", e); }
+  try{ await bootstrapCloud(); }catch(e){ console.warn('[MP] bootstrapCloud error', e); }
+  try{ await syncOutbox(); }catch(e){ console.warn('[MP] syncOutbox error', e); }
+  setInterval(()=>{ syncOutbox().catch(()=>{}); }, 15000);
 })();
 </script>
 <!-- ===== MENSAJE EN PANTALLA (IN-APP) ===== -->
@@ -2357,18 +2595,93 @@ if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
 </div>
 </div>
 
-  <script>
+  <!-- Pendientes de sincronización (OUTBOX) -->
+  <div id="mpPendingWrap" style="position:fixed;top:14px;right:14px;z-index:9999;display:flex;gap:8px;align-items:center;">
+    <span style="font-size:12px;color:rgba(255,255,255,.72);background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15);padding:6px 10px;border-radius:999px;backdrop-filter: blur(8px);">Pendientes</span>
+    <span id="mpPendingCount" style="display:none;min-width:28px;justify-content:center;align-items:center;font-weight:900;font-size:12px;color:#fff;background:rgba(255,69,69,.85);border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:999px;">0</span>
+  </div>
+
+<script>
 
 // === Boot seguro (evita ReferenceError si cambian scopes) ===
 document.addEventListener("DOMContentLoaded", () => {
 
   // === Ensure migrateOutboxSchema exists in THIS script tag (evita cache/orden) ===
   if (typeof window.migrateOutboxSchema !== "function") {
-    window.migrateOutboxSchema =  catch (e) {
+    window.migrateOutboxSchema = async function migrateOutboxSchema(){
+      try{
+        const KEY = "mp_outbox_v1";
+        const raw = localStorage.getItem(KEY);
+        if(!raw) return;
+        let arr;
+        try { arr = JSON.parse(raw); } catch(e){ localStorage.removeItem(KEY); return; }
+        if(!Array.isArray(arr)) { localStorage.removeItem(KEY); return; }
+        const cleaned = [];
+        for(const it of arr){
+          if(!it || typeof it !== "object") continue;
+          const room = String(it.habitacion || it.room || it.roomNumber || it.num || "").trim();
+          const vuelta = String(it.vuelta || it.vueltaActiva || it.round || "").trim();
+          if(!room || !vuelta) continue;
+          cleaned.push({
+            nip: String(it.nip || "").trim(),
+            action: String(it.action || it.tipo || "save_state").trim(),
+            room,
+            habitacion: room,
+            vuelta,
+            payload: it.payload || it.data || {}
+          });
+        }
+        localStorage.setItem(KEY, JSON.stringify(cleaned));
+        console.log("[MP] Outbox migrado (inline):", cleaned.length);
+      }catch(e){
+        console.warn("[MP] migrateOutboxSchema inline error:", e);
+      }
+    }
+  }
+  try {
+    if (typeof bootstrapCloud === "function") window.bootstrapCloud = bootstrapCloud;
+    if (typeof syncOutbox === "function") window.syncOutbox = syncOutbox;
+    if (typeof window.bootstrapCloud === "function") window.bootstrapCloud();
+    (async ()=>{ await window.migrateOutboxSchema(); if (typeof window.syncOutbox==="function") window.syncOutbox(); })();
+} catch (e) {
     console.warn("[MP] boot error:", e);
   }
 });
 
+</script>
+
+<script>
+/* === PARCHE DEFINITIVO NIP (FORZADO) ===
+   Garantiza que el NIP se guarde SIEMPRE al desbloquear
+*/
+document.addEventListener("DOMContentLoaded", () => {
+  const nipInput = document.getElementById("nipInput");
+  if (!nipInput) return;
+
+  function forceSaveNip(){
+    const v = nipInput.value.trim();
+    if(!v) return;
+    sessionStorage.setItem("mp_nip", v);
+    sessionStorage.setItem("mp_nip_value", v);
+    localStorage.setItem("MP_NIP", v);
+    window.MP_NIP = v;
+    console.log("[MP] NIP forzado y guardado:", v);
+  }
+
+  // cualquier interacción relevante
+  nipInput.addEventListener("input", forceSaveNip);
+  nipInput.addEventListener("change", forceSaveNip);
+  nipInput.addEventListener("blur", forceSaveNip);
+
+  // por si hay botón de desbloqueo
+  document.querySelectorAll("button").forEach(btn => {
+    if (btn.textContent.toLowerCase().includes("nip") ||
+        btn.textContent.toLowerCase().includes("desblo")) {
+      btn.addEventListener("click", forceSaveNip);
+    }
+  });
+
+});
 </script>
 
 </body>
