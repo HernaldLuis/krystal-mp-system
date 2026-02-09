@@ -1447,6 +1447,7 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
     if(v === NIP_CODE){
       sessionStorage.setItem(NIP_SESSION_KEY, "1");
       sessionStorage.setItem(NIP_VALUE_KEY, v);
+      sessionStorage.setItem("mp_nip", v); // compat: usado por cloudWrite()
       unlockUI();
       closeNip();
       nipInput.value = "";
@@ -1586,9 +1587,9 @@ const Cloud = {
 function sbHeaders(extra){
   const h = {
     "Content-Type": "application/json",
-    "apikey": SUPABASE_KEY
+    "apikey": SUPABASE_KEY,
+    "Authorization": `Bearer ${SUPABASE_KEY}`
   };
-  // Si alguna vez activas verify JWT en functions, puedes sumar Authorization aquí
   if(extra) Object.assign(h, extra);
   return h;
 }
@@ -1726,7 +1727,7 @@ async function enqueue(op){
   const item = {
     id: uuidv4(),
     createdAt: Date.now(),
-    nip: sessionStorage.getItem("mp_nip") || "",
+    nip: sessionStorage.getItem("mp_nip_value") || sessionStorage.getItem("mp_nip") || "",
     ...op
   };
   await idbPut(OUTBOX_STORE, item);
@@ -1757,7 +1758,7 @@ async function enqueueOrSend(op){
 async function cloudWrite(op){
   const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
   const body = {
-    nip: sessionStorage.getItem("mp_nip") || "",
+    nip: sessionStorage.getItem("mp_nip_value") || sessionStorage.getItem("mp_nip") || "",
     action: op.action,
     vuelta: op.vuelta,
     room: op.room,
@@ -1819,6 +1820,8 @@ async function syncOutbox(){
   try{ await cloudReadSnapshot(); }catch(e){}
   repaintAll();
 }
+
+window.syncOutbox = syncOutbox;
 
 let pendingBadgeTimer = null;
 function updatePendingBadge(){
