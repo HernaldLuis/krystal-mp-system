@@ -1810,7 +1810,14 @@ async function enqueueOrSend(op){
 }
 
 async function cloudWrite(op){
-  const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
+  
+    // Guard cliente: evita encolar cosas sin vuelta/habitación
+    if (!vuelta || !room) {
+      console.warn("[MP] Falta vuelta o habitación (cliente). room:", room, "vuelta:", vuelta);
+      throw new Error("Falta vuelta o habitación (cliente)");
+    }
+
+const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
   const body = {nip: getNipActual(),
     action: op.action,
     vuelta: op.vuelta,
