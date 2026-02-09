@@ -1684,7 +1684,8 @@ function save(room, obj){
   // Persistimos snapshot local solo como cache de lectura cuando no hay internet (no es registro oficial)
   idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
   // Enviar a nube o encolar
-  enqueueOrSend({ action:"save_state", room, vuelta: VUELTA_ACTIVA, payload: Cloud.rooms[room] });
+  enqueueOrSend({ action:"save_state", room, habitacion: room,
+      vuelta: VUELTA_ACTIVA, payload: Cloud.rooms[room] });
 }
 
 function loadHistory(room){
@@ -1694,7 +1695,8 @@ function loadHistory(room){
 function saveHistory(room, arr){
   Cloud.history[room] = Array.isArray(arr) ? arr : [];
   idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
-  enqueueOrSend({ action:"save_history", room, vuelta: VUELTA_ACTIVA, payload: Cloud.history[room] });
+  enqueueOrSend({ action:"save_history", room, habitacion: room,
+      vuelta: VUELTA_ACTIVA, payload: Cloud.history[room] });
 }
 
 async function cloudReadSnapshot(){
@@ -1778,8 +1780,7 @@ async function enqueueOrSend(op){
 
 async function cloudWrite(op){
   const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
-  const body = {
-    nip: getNipActual(),
+  const body = {nip: getNipActual(),
     action: op.action,
     vuelta: op.vuelta,
     room: op.room,
@@ -2262,7 +2263,9 @@ function render(){
         const evs = ensureEvidenceArray(state);
 
         for(const f of Array.from(file.files)){
-          const out = await uploadEvidenceFile({ room: activeRoom, vuelta: VUELTA_ACTIVA, file: f });
+          const out = await uploadEvidenceFile({ room: activeRoom,
+      habitacion: activeRoom,
+      vuelta: VUELTA_ACTIVA, file: f });
           // Guardar referencia en estado local
           evs.push({
             name: f.name,
