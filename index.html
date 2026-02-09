@@ -1811,7 +1811,10 @@ async function enqueueOrSend(op){
 
 async function cloudWrite(op){
   
-    // Guard cliente: evita encolar cosas sin vuelta/habitación
+    
+  const room = String(op?.habitacion || op?.room || "").trim();
+  const vuelta = String(op?.vuelta || "").trim();
+// Guard cliente: evita encolar cosas sin vuelta/habitación
     if (!vuelta || !room) {
       console.warn("[MP] Falta vuelta o habitación (cliente). room:", room, "vuelta:", vuelta);
       throw new Error("Falta vuelta o habitación (cliente)");
@@ -2302,7 +2305,7 @@ function render(){
 
         for(const f of Array.from(file.files)){
           const out = await uploadEvidenceFile({ room: activeRoom,
-      habitacion: activeRoom,
+      habitacion: room,
       vuelta: VUELTA_ACTIVA, file: f });
           // Guardar referencia en estado local
           evs.push({
@@ -2599,11 +2602,44 @@ if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
 
 // === Boot seguro (evita ReferenceError si cambian scopes) ===
 document.addEventListener("DOMContentLoaded", () => {
+
+  // === Ensure migrateOutboxSchema exists in THIS script tag (evita cache/orden) ===
+  if (typeof window.migrateOutboxSchema !== "function") {
+    window.migrateOutboxSchema = async function migrateOutboxSchema(){
+      try{
+        const KEY = "mp_outbox_v1";
+        const raw = localStorage.getItem(KEY);
+        if(!raw) return;
+        let arr;
+        try { arr = JSON.parse(raw); } catch(e){ localStorage.removeItem(KEY); return; }
+        if(!Array.isArray(arr)) { localStorage.removeItem(KEY); return; }
+        const cleaned = [];
+        for(const it of arr){
+          if(!it || typeof it !== "object") continue;
+          const room = String(it.habitacion || it.room || it.roomNumber || it.num || "").trim();
+          const vuelta = String(it.vuelta || it.vueltaActiva || it.round || "").trim();
+          if(!room || !vuelta) continue;
+          cleaned.push({
+            nip: String(it.nip || "").trim(),
+            action: String(it.action || it.tipo || "save_state").trim(),
+            room,
+            habitacion: room,
+            vuelta,
+            payload: it.payload || it.data || {}
+          });
+        }
+        localStorage.setItem(KEY, JSON.stringify(cleaned));
+        console.log("[MP] Outbox migrado (inline):", cleaned.length);
+      }catch(e){
+        console.warn("[MP] migrateOutboxSchema inline error:", e);
+      }
+    }
+  }
   try {
     if (typeof bootstrapCloud === "function") window.bootstrapCloud = bootstrapCloud;
     if (typeof syncOutbox === "function") window.syncOutbox = syncOutbox;
     if (typeof window.bootstrapCloud === "function") window.bootstrapCloud();
-    (async ()=>{ await migrateOutboxSchema(); if (typeof window.syncOutbox==="function") window.syncOutbox(); })();
+    (async ()=>{ await window.migrateOutboxSchema(); if (typeof window.syncOutbox==="function") window.syncOutbox(); })();
 } catch (e) {
     console.warn("[MP] boot error:", e);
   }
