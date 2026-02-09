@@ -1586,6 +1586,26 @@ let activeHabEl = null;
   let state = null;
 
   // ====== CLOUD (Supabase) + OUTBOX OFFLINE (IndexedDB) ======
+
+// === Migración OUTBOX (evita reintentos eternos con items viejos sin campos) ===
+const OUTBOX_SCHEMA_KEY = "mp_outbox_schema_v1";
+const OUTBOX_SCHEMA_VER = "2";
+async function migrateOutboxSchema(){
+  try{
+    const cur = localStorage.getItem(OUTBOX_SCHEMA_KEY);
+    if(cur === OUTBOX_SCHEMA_VER) return;
+    localStorage.setItem(OUTBOX_SCHEMA_KEY, OUTBOX_SCHEMA_VER);
+    // Limpia outbox viejo (estructura anterior)
+    await idbClear(OUTBOX_STORE);
+    // Actualiza badge si existe
+    if (typeof updatePendingBadge === "function") updatePendingBadge(0);
+    if (typeof setPendingCount === "function") setPendingCount(0);
+    console.warn("[MP] OUTBOX migrado: se limpió outbox viejo para evitar 400 por schema.");
+  }catch(e){
+    console.warn("[MP] migrateOutboxSchema error:", e);
+  }
+}
+
 // La nube es la fuente oficial. Si no hay internet, guardamos operaciones pendientes (OUTBOX)
 // y se sincronizan automáticamente al reconectar.
 
@@ -1654,6 +1674,17 @@ async function idbDelete(storeName, key){
   return new Promise((resolve, reject)=>{
     const tx = db.transaction(storeName, "readwrite");
     tx.objectStore(storeName).delete(key);
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { const e=tx.error; db.close(); reject(e); };
+  });
+}
+
+async function idbClear(storeName){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(storeName, "readwrite");
+    const req = tx.objectStore(storeName).clear();
+    req.onsuccess = ()=>{};
     tx.oncomplete = ()=> { db.close(); resolve(true); };
     tx.onerror = ()=> { const e=tx.error; db.close(); reject(e); };
   });
@@ -2565,8 +2596,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof bootstrapCloud === "function") window.bootstrapCloud = bootstrapCloud;
     if (typeof syncOutbox === "function") window.syncOutbox = syncOutbox;
     if (typeof window.bootstrapCloud === "function") window.bootstrapCloud();
-    if (typeof window.syncOutbox === "function") window.syncOutbox();
-  } catch (e) {
+    (async ()=>{ await migrateOutboxSchema(); if (typeof window.syncOutbox==="function") window.syncOutbox(); })();
+} catch (e) {
     console.warn("[MP] boot error:", e);
   }
 });
