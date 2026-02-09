@@ -1823,10 +1823,11 @@ async function cloudWrite(op){
 const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
   const body = {
     nip: getNipActual(),
-    action: String(op?.action || "").trim(),
+    action: (String(op?.action || "").trim() || "save_state"),
     vuelta,
     room,
     habitacion: room,
+    state: op?.payload ?? {},
     payload: op?.payload ?? {}
   };
   const t0 = performance.now();
