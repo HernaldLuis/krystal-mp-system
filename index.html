@@ -1821,11 +1821,13 @@ async function cloudWrite(op){
     }
 
 const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
-  const body = {nip: getNipActual(),
-    action: op.action,
-    vuelta: op.vuelta,
-    room: op.room,
-    payload: op.payload
+  const body = {
+    nip: getNipActual(),
+    action: String(op?.action || "").trim(),
+    vuelta,
+    room,
+    habitacion: room,
+    payload: op?.payload ?? {}
   };
   const t0 = performance.now();
   const res = await fetch(url, {
