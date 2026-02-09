@@ -1340,7 +1340,28 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
   // ⚠️ Usa tu "legacy anon JWT" (Settings → API Keys → Legacy anon) si tu función tiene activado:
   // "Verify JWT with legacy secret".
   const SUPABASE_URL = "https://sflluzcznnhdylpwfzqb.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmbGx1emN6bm5oZHlscHdmenFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDQwOTcsImV4cCI6MjA4NTk4MDA5N30.Qrzx7-EJbr4LsimboWiP6qtVw6GdWC_uFOb1A8xhZ4Y"; // Publishable key // ej. eyJhbGciOi...
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmbGx1emN6bm5oZHlscHdmenFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDQwOTcsImV4cCI6MjA4NTk4MDA5N30.Qrzx7-EJbr4LsimboWiP6qtVw6GdWC_uFOb1A8xhZ4Y"; 
+
+// === NIP helpers (evita nip vacío en mpSync) ===
+function getNipActual(){
+  return (
+    (sessionStorage.getItem("mp_nip_value") || "").trim() ||
+    (sessionStorage.getItem("mp_nip") || "").trim() ||
+    (localStorage.getItem("MP_NIP") || "").trim()
+  );
+}
+function setNipActual(nip){
+  const v = String(nip || "").trim();
+  if(!v) return;
+  sessionStorage.setItem("mp_nip_value", v);
+  sessionStorage.setItem("mp_nip", v);
+  localStorage.setItem("MP_NIP", v);
+  window.MP_NIP = v;
+}
+window.getNipActual = getNipActual;
+window.setNipActual = setNipActual;
+
+// Publishable key // ej. eyJhbGciOi...
   const EDGE_UPLOAD_FN = "uploadEvidence";
   const EDGE_READ_FN = "mpRead";
   const EDGE_SYNC_FN = "mpSync";
@@ -1727,7 +1748,7 @@ async function enqueue(op){
   const item = {
     id: uuidv4(),
     createdAt: Date.now(),
-    nip: sessionStorage.getItem("mp_nip_value") || sessionStorage.getItem("mp_nip") || "",
+    nip: getNipActual(),
     ...op
   };
   await idbPut(OUTBOX_STORE, item);
@@ -1758,7 +1779,7 @@ async function enqueueOrSend(op){
 async function cloudWrite(op){
   const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
   const body = {
-    nip: sessionStorage.getItem("mp_nip_value") || sessionStorage.getItem("mp_nip") || "",
+    nip: getNipActual(),
     action: op.action,
     vuelta: op.vuelta,
     room: op.room,
@@ -2533,5 +2554,20 @@ if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
     <span id="mpPendingCount" style="display:none;min-width:28px;justify-content:center;align-items:center;font-weight:900;font-size:12px;color:#fff;background:rgba(255,69,69,.85);border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:999px;">0</span>
   </div>
 
+<script>
+
+// === Boot seguro (evita ReferenceError si cambian scopes) ===
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    if (typeof bootstrapCloud === "function") window.bootstrapCloud = bootstrapCloud;
+    if (typeof syncOutbox === "function") window.syncOutbox = syncOutbox;
+    if (typeof window.bootstrapCloud === "function") window.bootstrapCloud();
+    if (typeof window.syncOutbox === "function") window.syncOutbox();
+  } catch (e) {
+    console.warn("[MP] boot error:", e);
+  }
+});
+
+</script>
 </body>
 </html>
