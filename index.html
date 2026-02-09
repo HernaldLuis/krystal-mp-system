@@ -734,11 +734,6 @@ main .grid{
 }
 .mp-inline-text button:hover{ background: rgba(255,255,255,.22); }
 </style>
-<script>
-// === SUPABASE CONFIG ===
-const SUPABASE_ANON_KEY = SUPABASE_KEY; // <- reemplaza por tu anon key real
-</script>
-
 </head>
 <body>
 <header>
@@ -1332,6 +1327,7 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
 </div>
 </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   const NIP_CODE = "KG2026";
@@ -1342,6 +1338,8 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
   const SUPABASE_URL = "https://sflluzcznnhdylpwfzqb.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmbGx1emN6bm5oZHlscHdmenFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDQwOTcsImV4cCI6MjA4NTk4MDA5N30.Qrzx7-EJbr4LsimboWiP6qtVw6GdWC_uFOb1A8xhZ4Y"; 
 
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // === NIP helpers (evita nip vacío en mpSync) ===
 function getNipActual(){
   return (
@@ -1731,27 +1729,23 @@ function saveHistory(room, arr){
 }
 
 async function cloudReadSnapshot(){
-  const url = `${SUPABASE_URL}/functions/v1/${EDGE_READ_FN}`;
-  const t0 = performance.now();
-  const res = await fetch(url, {
-    method: "POST",
-    headers: sbHeaders(),
-    body: JSON.stringify({ vuelta: VUELTA_ACTIVA })
-  });
-  const ms = performance.now() - t0;
-  if(!res.ok){
-    const txt = await res.text().catch(()=> "");
-    throw new Error(`mpRead ${res.status}: ${txt || res.statusText}`);
+  // LECTURA DIRECTA (cloud only) desde Supabase Table: mp_room_state
+  const { data, error } = await sb
+    .from("mp_room_state")
+    .select("*")
+    .eq("vuelta", VUELTA_ACTIVA);
+
+  if (error) throw error;
+
+  const rooms = {};
+  for (const row of (data || [])) {
+    const room = String(row.habitacion ?? row.room ?? "").trim();
+    if(!room) continue;
+    rooms[room] = row.state || {};
   }
-  const data = await res.json();
-  // Esperado: { rooms: { "2210": {...} }, history: { "2210": [...] } }
-  Cloud.rooms = (data && data.rooms) ? data.rooms : {};
-  Cloud.history = (data && data.history) ? data.history : {};
+  Cloud.rooms = rooms;
+  Cloud.history = {}; // (historial lo conectamos después si lo necesitas)
   Cloud.ready = true;
-  // cache local para lectura offline
-  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
-  showToastProgress("Sincronizando nube…", ms, "Sincronizado ✅");
-  return data;
 }
 
 async function loadOfflineCache(){
