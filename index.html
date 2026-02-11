@@ -3396,7 +3396,15 @@ if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
 (async ()=>{
   try{ await bootstrapCloud(); }catch(e){ console.warn('[MP] bootstrapCloud error', e); }
   try{ await syncOutbox(); }catch(e){ console.warn('[MP] syncOutbox error', e); }
-  setInterval(()=>{ syncOutbox().catch(()=>{}); }, 15000);
+  // (FIX) Pull + repaint: ver cambios de otros dispositivos sin recargar
+  try{ if(typeof startAutoRefresh==="function") startAutoRefresh(); }catch(e){} 
+  setInterval(()=>{ 
+    syncOutbox().catch(()=>{}); 
+    // Fallback pull (por si auto-refresh no se inició)
+    if(typeof cloudReadSnapshot==="function" && typeof repaintAll==="function" && navigator.onLine && !document.hidden){
+      cloudReadSnapshot().then(()=>{ try{ repaintAll(); }catch(e){} }).catch(()=>{});
+    }
+  }, 15000);
 })();
 </script>
 <!-- ===== MENSAJE EN PANTALLA (IN-APP) ===== -->
