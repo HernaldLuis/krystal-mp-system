@@ -1,11 +1,16 @@
 <!DOCTYPE html>
+
 <html lang="es-MX">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Mantenimiento Preventivo · Checklist por Habitación</title>
-<style>
-:root{
+
+<script>
+// === SUPABASE CONFIG ===
+// Config de Supabase se declara más abajo (boot seguro) para evitar errores de orden.
+</script>
+<style>:root{
   --bg:#0b0b10;
   --card: rgba(255,255,255,.06);
   --border: rgba(255,255,255,.12);
@@ -49,6 +54,7 @@ header{
 h1{font-size:16px;margin:0;letter-spacing:.2px;}
 .sub{font-size:12px;color:var(--muted);margin-top:2px;}
 .legend{display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--muted);}
+.header-right{display:flex; align-items:flex-start; justify-content:flex-end;}
 .pill{display:flex; gap:8px; align-items:center; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background: rgba(255,255,255,.04);}
 .sq{width:10px;height:10px;border-radius:3px;}
 .sq.rojo{
@@ -168,7 +174,6 @@ main .grid{
   font-size: 12px;
 }
 
-
 /* ====== VUELTAS (LIBRO) ====== */
 .vuelta-strip{
   display:flex; gap:10px; align-items:center; flex-wrap:wrap;
@@ -212,7 +217,65 @@ main .grid{
   cursor:pointer;
 }
 #btnNuevaVuelta:hover{ filter:brightness(1.05); }
-</style><style>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
 /* ===== FONDO TORNASOL ANIMADO (ELEGANTE) ===== */
 body{
   background:
@@ -257,7 +320,65 @@ body::before{
   mix-blend-mode: overlay;
   opacity:.6;
 }
-</style><style>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
 /* ====== ESTADOS MP (ROJO / AMARILLO PULSO / VERDE) ====== */
 .hab{ cursor:pointer; user-select:none; outline:none; }
 .hab:focus{ box-shadow: 0 0 0 3px rgba(255,255,255,.18), 0 10px 22px rgba(0,0,0,.28); }
@@ -443,7 +564,65 @@ body::before{
   .mp-notes{ grid-template-columns: 1fr; }
   .mp-progress-bar{ width: 120px; }
 }
-</style><style>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
 /* ====== LAYOUT CON PANEL DERECHO FIJO ====== */
 main .grid{
   max-width: 1400px;
@@ -583,7 +762,65 @@ main .grid{
     max-height: 46vh; /* sigue con scroll si se alarga */
   }
 }
-</style><style>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
 /* ====== FOOTER FIRMA ====== */
 .mp-footer{
   margin-top: 40px;
@@ -612,7 +849,65 @@ main .grid{
   letter-spacing: .18em;
   color: rgba(120,180,255,.9);
 }
-</style><style>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
 @keyframes tileIn{from{opacity:0;transform:translateY(10px) scale(.98);filter:blur(2px);}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}}
 .hab{position:relative;will-change:transform,opacity;}
 .hab.is-in{animation:tileIn .42s ease both;}
@@ -642,7 +937,6 @@ main .grid{
 .mp-locked #mpSaveBtn{opacity:.6;pointer-events:none;}
 .mp-locked #mpResetBtn{opacity:.6;pointer-events:none;}
 
-
 /* ===== TOAST PRO (guardando con barra) ===== */
 .mp-toast-inner{ padding: 12px 14px; }
 .mp-toast-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -665,7 +959,65 @@ main .grid{
   transition: width .12s linear;
 }
 .mp-toast[data-mode="simple"] .mp-toast-bar{ display:none; }
-</style><style>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
 /* ===== HISTORIAL (BORRADOR LOCAL) ===== */
 #mpCloseCycleBtn{ margin-left: 10px; }
 .mp-history{ margin-top:14px; border-top:1px solid rgba(255,255,255,.10); padding-top:14px; }
@@ -680,7 +1032,65 @@ main .grid{
 .mp-h-actions{ display:flex; gap:8px; margin-top:8px; }
 .mp-h-actions button{ padding:8px 10px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); color: rgba(255,255,255,.92); font-weight:900; cursor:pointer; }
 .mp-h-actions button:hover{ background: rgba(255,255,255,.12); }
-</style><style>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
 /* ===== MENSAJE IN-APP (REEMPLAZA ALERT) ===== */
 .mp-inline{
   position: fixed;
@@ -733,8 +1143,228 @@ main .grid{
   cursor: pointer;
 }
 .mp-inline-text button:hover{ background: rgba(255,255,255,.22); }
-</style>
-</head>
+
+/* === SYNC: HEADER RIGHT (LIMPIO) === */
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  max-width: min(720px, 62vw);
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.72); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.18); }
+#mpPendingWrap .sync-chip-status{ background: rgba(0,0,0,.18); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight: 900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight: 800;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  opacity:.95;
+}
+/* === END SYNC === */
+
+/* ====== HEADER RIGHT: Barra de sync + leyenda (SIN DESBORDAR) ====== */
+.header-right{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex: 1 1 520px;
+  min-width: 320px;
+}
+
+#mpPendingWrap.sync-inheader{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:flex-end;
+  max-width: 100%;
+}
+
+#mpPendingWrap .sync-toprow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-legendrow{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+#mpPendingWrap .sync-chip{
+  font-size:12px;
+  color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.14);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+#mpPendingWrap .sync-chip-label{ color: rgba(255,255,255,.78); }
+#mpPendingWrap .sync-chip-last{ color: rgba(255,255,255,.72); background: rgba(0,0,0,.22); border-color: rgba(255,255,255,.12); }
+#mpPendingWrap .sync-chip-status{ color: rgba(255,255,255,.78); background: rgba(0,0,0,.22); border-color: rgba(255,255,255,.12); }
+
+#mpPendingWrap .sync-chip-count{
+  min-width: 28px;
+  justify-content:center;
+  font-weight:900;
+  color:#fff;
+  background: rgba(255,69,69,.85);
+  border-color: rgba(255,255,255,.18);
+}
+
+#mpPendingWrap .sync-chip-btn{
+  appearance:none;
+  cursor:pointer;
+  font-weight:900;
+}
+
+#mpPendingWrap .pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: rgba(0,0,0,.24);
+  border: 1px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(8px);
+  min-width: 170px;
+}
+
+#mpPendingWrap .pill-title{
+  font-weight:900;
+  font-size:13px;
+  letter-spacing:.2px;
+  color: rgba(255,255,255,.92);
+}
+
+#mpPendingWrap .pill-sub{
+  font-size:12px;
+  color: rgba(255,255,255,.65);
+  margin-left:auto;
+}
+
+#mpPendingWrap .sq{
+  width:10px;height:10px;border-radius:4px;display:inline-block;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12);
+}
+#mpPendingWrap .sq.rojo{
+  background: rgba(255,69,69,.95);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12), 0 0 10px rgba(255,69,69,.35);
+}
+#mpPendingWrap .sq.amarillo{
+  background: rgba(255,210,77,.95);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12), 0 0 10px rgba(255,210,77,.30);
+}
+#mpPendingWrap .sq.verde{
+  background: rgba(95,255,20,.95);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12), 0 0 10px rgba(95,255,20,.28);
+}
+
+/* responsive: baja a una fila limpia */
+@media (max-width: 900px){
+  .header-right{ flex: 1 1 100%; min-width: 0; }
+  #mpPendingWrap.sync-inheader{ align-items:flex-start; }
+  #mpPendingWrap .sync-toprow, #mpPendingWrap .sync-legendrow{ justify-content:flex-start; }
+}
+
+/* === PATCH: SEMÁFORO CONEXIÓN (GENERAL) === */
+.conn-wrap{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+}
+
+.conn-semaforo{
+  width: 18px;
+  display:inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 6px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(8px);
+}
+
+.conn-light{
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  opacity: .22;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.08);
+}
+
+.conn-red{ background: rgba(255,69,69,.95); }
+.conn-yellow{ background: rgba(255,210,77,.95); }
+.conn-green{ background: rgba(95,255,20,.95); }
+
+.conn-light.is-on{
+  opacity: 1;
+  animation: connPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes connPulse{
+  0%,100%{ transform: scale(1); filter: brightness(1); }
+  50%{ transform: scale(1.12); filter: brightness(1.15); }
+}
+
+.conn-text{
+  font-weight: 800;
+  color: rgba(255,255,255,.82);
+}
+/* === END PATCH === */
+
+</style></head>
 <body>
 <header>
 <div class="wrap">
@@ -744,15 +1374,41 @@ main .grid{
 <div>
 <h1>Mantenimiento Preventivo · Checklist por Habitación</h1>
 <div class="sub">Clic en una habitación → acredita puntos con ✔. Estado: rojo (sin iniciar), amarillo (incompleto), verde (completo).</div>
+
 </div>
 </div>
-<div class="legend">
-<div class="pill"><span class="sq rojo"></span>Rojo</div>
-<div class="pill"><span class="sq amarillo"></span>Amarillo</div>
-<div class="pill"><span class="sq verde"></span>Verde</div>
+<div class="header-right">
+<div class="sync-inheader" id="mpPendingWrap">
+<div class="sync-toprow">
+<span class="sync-chip sync-chip-label">Pendientes</span>
+<span class="sync-chip sync-chip-count" id="mpPendingCount" style="display:none;">0</span>
+<button class="sync-chip sync-chip-btn" id="mpSyncNow" type="button">
+      Sincronizar ahora
+    </button>
+<span class="sync-chip sync-chip-last" id="mpLastSync">Últ. sync: —</span>
+<span class="sync-chip sync-chip-status" id="mpSyncStatus" style="display:none;">OK</span>
+</div>
+<div aria-label="Leyenda de semáforo" class="sync-legendrow">
+<div class="pill pill-rojo">
+<span aria-hidden="true" class="sq rojo"></span>
+<span class="pill-title">Rojo</span>
+<span class="pill-sub">Incompleta</span>
+</div>
+<div class="pill pill-amarillo">
+<span aria-hidden="true" class="sq amarillo"></span>
+<span class="pill-title">Amarillo</span>
+<span class="pill-sub">Parcial</span>
+</div>
+<div class="pill pill-verde">
+<span aria-hidden="true" class="sq verde"></span>
+<span class="pill-title">Verde</span>
+<span class="pill-sub">Completado</span>
 </div>
 </div>
 </div>
+</div></div>
+</div>
+
 </header>
 <main>
 <div class="grid">
@@ -1235,12 +1891,11 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
 <div class="mp-side-sub" id="mpSideMode">General</div>
 </div>
 <div class="vuelta-strip" id="vueltaStrip">
-  <div class="vuelta-add">
-    <span class="vuelta-hint" id="vueltaHint">Libro: Vuelta 1</span>
-    <button type="button" id="btnNuevaVuelta">+ Nueva</button>
-  </div>
+<div class="vuelta-add">
+<span class="vuelta-hint" id="vueltaHint">Libro: Vuelta 1</span>
+<button id="btnNuevaVuelta" type="button">+ Nueva</button>
 </div>
-
+</div>
 <div class="mp-side-body" id="mpSideBody">
 <!-- contenido inyectado -->
 </div>
@@ -1327,7 +1982,6 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
 </div>
 </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   const NIP_CODE = "KG2026";
@@ -1335,11 +1989,17 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
   // ====== SUPABASE (EVIDENCIAS EN NUBE) ======
   // ⚠️ Usa tu "legacy anon JWT" (Settings → API Keys → Legacy anon) si tu función tiene activado:
   // "Verify JWT with legacy secret".
-  const SUPABASE_URL = "https://sflluzcznnhdylpwfzqb.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmbGx1emN6bm5oZHlscHdmenFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MDQwOTcsImV4cCI6MjA4NTk4MDA5N30.Qrzx7-EJbr4LsimboWiP6qtVw6GdWC_uFOb1A8xhZ4Y"; 
+const SUPABASE_URL = "https://zpdmxmsjgdecxzcomcbe.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZG14bXNqZ2RlY3h6Y29tY2JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3ODI4MDUsImV4cCI6MjA4NjM1ODgwNX0.Cgai3DWMLP3dlcEHy5TA9zyPJgD28DbETJUqFm1QLoA";
 
+  // Validación rápida de configuración
+  function mpSupabaseConfigOk(){
+    try{
+      return !!(SUPABASE_URL && SUPABASE_KEY && String(SUPABASE_KEY).length > 20);
+    }catch(e){ return false; }
+  }
+ 
 
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // === NIP helpers (evita nip vacío en mpSync) ===
 function getNipActual(){
   return (
@@ -1729,23 +2389,27 @@ function saveHistory(room, arr){
 }
 
 async function cloudReadSnapshot(){
-  // LECTURA DIRECTA (cloud only) desde Supabase Table: mp_room_state
-  const { data, error } = await sb
-    .from("mp_room_state")
-    .select("*")
-    .eq("vuelta", VUELTA_ACTIVA);
-
-  if (error) throw error;
-
-  const rooms = {};
-  for (const row of (data || [])) {
-    const room = String(row.habitacion ?? row.room ?? "").trim();
-    if(!room) continue;
-    rooms[room] = row.state || {};
+  const url = `${SUPABASE_URL}/functions/v1/${EDGE_READ_FN}`;
+  const t0 = performance.now();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: sbHeaders(),
+    body: JSON.stringify({ vuelta: VUELTA_ACTIVA })
+  });
+  const ms = performance.now() - t0;
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`mpRead ${res.status}: ${txt || res.statusText}`);
   }
-  Cloud.rooms = rooms;
-  Cloud.history = {}; // (historial lo conectamos después si lo necesitas)
+  const data = await res.json();
+  // Esperado: { rooms: { "2210": {...} }, history: { "2210": [...] } }
+  Cloud.rooms = (data && data.rooms) ? data.rooms : {};
+  Cloud.history = (data && data.history) ? data.history : {};
   Cloud.ready = true;
+  // cache local para lectura offline
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
+  showToastProgress("Sincronizando nube…", ms, "Sincronizado ✅");
+  return data;
 }
 
 async function loadOfflineCache(){
@@ -1883,7 +2547,144 @@ async function syncOutbox(){
 
 window.syncOutbox = syncOutbox;
 
+// === UI Sync (botón "Sincronizar ahora" + estatus) ===
+(function(){
+  function fmtNow(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    const ss = String(d.getSeconds()).padStart(2,"0");
+    return `${hh}:${mm}:${ss}`;
+  }
+  function setLastSync(label){
+    const el = document.getElementById("mpLastSync");
+    if(el) el.textContent = `Últ. sync: ${label}`;
+  }
+  function setSyncStatus(msg, show=true){
+    const el = document.getElementById("mpSyncStatus");
+    if(!el) return;
+    el.textContent = msg;
+    el.style.display = show ? "inline-flex" : "none";
+  }
+  function setSyncBtn(enabled){
+    const btn = document.getElementById("mpSyncNow");
+    if(!btn) return;
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? "1" : ".65";
+    btn.style.cursor = enabled ? "pointer" : "not-allowed";
+  }
+
+  async function syncNow(){
+    // No cancelamos la carga: si no hay internet, solo avisamos que quedó en cola.
+    // Si no está configurada la nube, no intentamos enviar (pero mantenemos la cola).
+    if(typeof mpSupabaseConfigOk === "function" && !mpSupabaseConfigOk()){
+      setSyncStatus("Falta configurar nube", true);
+      setLastSync("—");
+      setTimeout(()=> setSyncStatus("", false), 2600);
+      return;
+    }
+    if(!navigator.onLine){
+      setSyncStatus("Sin internet: quedará en cola", true);
+      setLastSync("—");
+      updatePendingBadge();
+      setTimeout(()=> setSyncStatus("", false), 2400);
+      return;
+    }
+    try{
+      setSyncBtn(false);
+      setSyncStatus("Sincronizando...", true);
+      await (window.syncOutbox ? window.syncOutbox() : Promise.resolve());
+      setLastSync(fmtNow());
+      setSyncStatus("Sincronizado ✅", true);
+      setTimeout(()=> setSyncStatus("", false), 1800);
+    }catch(e){
+      console.warn("[MP] Sync Now error:", e);
+      setSyncStatus("Error al sincronizar", true);
+    }finally{
+      setSyncBtn(true);
+      updatePendingBadge();
+    }
+  }
+
+  window.__mpSyncNow = syncNow;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const btn = document.getElementById("mpSyncNow");
+    if(btn){
+      btn.addEventListener("click", syncNow);
+    }
+    // Indicador inicial
+    setSyncBtn(true);
+    setLastSync("—");
+    try{
+      if(typeof mpSupabaseConfigOk === "function" && !mpSupabaseConfigOk()){
+        setSyncStatus("Falta configurar nube", true);
+        setTimeout(()=> setSyncStatus("", false), 2600);
+      }
+    }catch(e){}
+  });
+
+  window.addEventListener("online", ()=>{
+    // Al reconectar: intenta sincronizar y actualiza UI
+    try{ syncNow(); }catch(e){}
+  });
+})();
+
+
+
+  // === Auto-refresh (para ver cambios de otros dispositivos sin recargar) ===
+  if (typeof window.startAutoRefresh !== "function") {
+    let __mpAutoTimer = null;
+    window.startAutoRefresh = function startAutoRefresh(){
+      if(__mpAutoTimer) return;
+      const tick = async ()=>{
+        if (!navigator.onLine) return;
+        if (document.hidden) return;
+        try{
+          await cloudReadSnapshot();
+          repaintAll();
+          if (activeRoom){
+            const st = load(activeRoom);
+            setProgress(percent(st));
+            renderHistory(activeRoom);
+          }
+        }catch(e){
+          // silencioso: no saturar consola
+        }
+      };
+      __mpAutoTimer = setInterval(tick, 15000); // cada 15s
+      document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) tick(); });
+      window.addEventListener("online", ()=>{ try{ if(typeof syncOutbox==="function") syncOutbox(); }catch(e){} tick(); });
+    };
+  }
+
 let pendingBadgeTimer = null;
+
+function updateConnectionSemaforo(pendingCount){
+  const wrap = document.getElementById("mpConnSemaforo");
+  const txt = document.getElementById("mpConnText");
+  if(!wrap || !txt) return;
+
+  const red = wrap.querySelector(".conn-red");
+  const yellow = wrap.querySelector(".conn-yellow");
+  const green = wrap.querySelector(".conn-green");
+  [red,yellow,green].forEach(el=> el && el.classList.remove("is-on"));
+
+  if(!navigator.onLine){
+    red && red.classList.add("is-on");
+    txt.textContent = "Sin internet";
+    return;
+  }
+  const p = Number(pendingCount||0);
+  if(p > 0){
+    yellow && yellow.classList.add("is-on");
+    txt.textContent = "Conectado (pendientes)";
+  }else{
+    green && green.classList.add("is-on");
+    txt.textContent = "Conectado";
+  }
+}
+
 function updatePendingBadge(){
   const el = document.getElementById("mpPendingCount");
   if(!el) return;
@@ -1892,7 +2693,9 @@ function updatePendingBadge(){
     const pending = await idbAll(OUTBOX_STORE).catch(()=> []);
     el.textContent = String(pending.length || 0);
     el.style.display = (pending.length ? "inline-flex" : "none");
-  }, 120);
+  
+    updateConnectionSemaforo(pending.length);
+}, 120);
 }
 
 function repaintAll(){
@@ -1919,11 +2722,12 @@ async function bootstrapCloud(){
     await loadOfflineCache();
   }
   updatePendingBadge();
+  updateConnectionSemaforo(Number(document.getElementById("mpPendingCount")?.textContent||0));
   repaintAll();
 }
 
-window.addEventListener("online", ()=> { showToast("Conexión restaurada ✅ sincronizando…"); syncOutbox(); });
-window.addEventListener("offline", ()=> { showToast("Sin internet ⚠️ se guardará en cola"); });
+window.addEventListener("online", ()=> { updateConnectionSemaforo(Number(document.getElementById("mpPendingCount")?.textContent||0)); showToast("Conexión restaurada ✅ sincronizando…"); syncOutbox(); });
+window.addEventListener("offline", ()=> { updateConnectionSemaforo(Number(document.getElementById("mpPendingCount")?.textContent||0)); showToast("Sin internet ⚠️ se guardará en cola"); });
 
   function percent(obj){
     const done = Object.values(obj.checks).filter(Boolean).length;
@@ -1998,17 +2802,25 @@ window.addEventListener("offline", ()=> { showToast("Sin internet ⚠️ se guar
       b.type = 'button';
       b.className = 'vuelta-btn' + (name === VUELTA_ACTIVA ? ' active' : '');
       b.textContent = name;
-      b.addEventListener('click', ()=>{
+      b.addEventListener('click', async ()=>{
         if(name === VUELTA_ACTIVA) return;
         VUELTA_ACTIVA = name;
         localStorage.setItem(STORAGE_VUELTA_ACTIVA, VUELTA_ACTIVA);
 
-        // Repinta habitaciones según esta vuelta
-        document.querySelectorAll('.hab').forEach(el=>{
-          const room = el.dataset.room || el.querySelector('.num')?.textContent?.trim() || '';
-          if(!room) return;
-          paint(el, percent(load(room)));
-        });
+        // ✅ Al cambiar de vuelta, cargamos el snapshot de nube de ESA vuelta.
+        if(navigator.onLine){
+          try{
+            await cloudReadSnapshot();
+          }catch(e){
+            console.warn('[MP] Cambio de vuelta: no se pudo leer nube, usando cache si existe:', e);
+            await loadOfflineCache();
+          }
+        }else{
+          await loadOfflineCache();
+        }
+
+        // Repinta habitaciones según lo que venga de nube/cache
+        repaintAll();
 
         // Si el modal está abierto, vuelve a cargar la habitación activa
         if(activeRoom){
@@ -2378,6 +3190,18 @@ function render(){
         <h4>Avance general (todos los edificios)</h4>
         <div class="mp-big">${overall}%</div>
         <div class="mp-row"><small>Estatus</small><span class="mp-status-wrap">${stat.label==="En proceso" ? `<img class="mp-proc-gif" src="https://res.cloudinary.com/dor6za85u/image/upload/v1770176416/figure_painting_interior_500_clr_12696_kqzpsk.gif" alt="En proceso">` : ""}<span class="mp-chip"><span class="mp-dot ${stat.cls}"></span>${stat.label}</span></span></div>
+        <div class="mp-row">
+          <small>Conexión</small>
+          <span class="conn-wrap">
+            <span class="conn-semaforo" id="mpConnSemaforo" aria-label="Estatus real de conexión">
+              <span class="conn-light conn-red" data-conn="offline" title="Sin internet"></span>
+              <span class="conn-light conn-yellow" data-conn="pending" title="Conectado pero con pendientes"></span>
+              <span class="conn-light conn-green" data-conn="online" title="Conectado"></span>
+            </span>
+            <span class="conn-text" id="mpConnText">—</span>
+          </span>
+        </div>
+
       </div>
       <div class="mp-kpi">
         <h4>Avance por torre</h4>
@@ -2589,12 +3413,6 @@ if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
 </div>
 </div>
 
-  <!-- Pendientes de sincronización (OUTBOX) -->
-  <div id="mpPendingWrap" style="position:fixed;top:14px;right:14px;z-index:9999;display:flex;gap:8px;align-items:center;">
-    <span style="font-size:12px;color:rgba(255,255,255,.72);background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15);padding:6px 10px;border-radius:999px;backdrop-filter: blur(8px);">Pendientes</span>
-    <span id="mpPendingCount" style="display:none;min-width:28px;justify-content:center;align-items:center;font-weight:900;font-size:12px;color:#fff;background:rgba(255,69,69,.85);border:1px solid rgba(255,255,255,.18);padding:6px 10px;border-radius:999px;">0</span>
-  </div>
-
 <script>
 
 // === Boot seguro (evita ReferenceError si cambian scopes) ===
@@ -2635,7 +3453,92 @@ document.addEventListener("DOMContentLoaded", () => {
   try {
     if (typeof bootstrapCloud === "function") window.bootstrapCloud = bootstrapCloud;
     if (typeof syncOutbox === "function") window.syncOutbox = syncOutbox;
+
+// === UI Sync (botón "Sincronizar ahora" + estatus) ===
+(function(){
+  function fmtNow(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    const ss = String(d.getSeconds()).padStart(2,"0");
+    return `${hh}:${mm}:${ss}`;
+  }
+  function setLastSync(label){
+    const el = document.getElementById("mpLastSync");
+    if(el) el.textContent = `Últ. sync: ${label}`;
+  }
+  function setSyncStatus(msg, show=true){
+    const el = document.getElementById("mpSyncStatus");
+    if(!el) return;
+    el.textContent = msg;
+    el.style.display = show ? "inline-flex" : "none";
+  }
+  function setSyncBtn(enabled){
+    const btn = document.getElementById("mpSyncNow");
+    if(!btn) return;
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? "1" : ".65";
+    btn.style.cursor = enabled ? "pointer" : "not-allowed";
+  }
+
+  async function syncNow(){
+    // No cancelamos la carga: si no hay internet, solo avisamos que quedó en cola.
+    // Si no está configurada la nube, no intentamos enviar (pero mantenemos la cola).
+    if(typeof mpSupabaseConfigOk === "function" && !mpSupabaseConfigOk()){
+      setSyncStatus("Falta configurar nube", true);
+      setLastSync("—");
+      setTimeout(()=> setSyncStatus("", false), 2600);
+      return;
+    }
+    if(!navigator.onLine){
+      setSyncStatus("Sin internet: quedará en cola", true);
+      setLastSync("—");
+      updatePendingBadge();
+      setTimeout(()=> setSyncStatus("", false), 2400);
+      return;
+    }
+    try{
+      setSyncBtn(false);
+      setSyncStatus("Sincronizando...", true);
+      await (window.syncOutbox ? window.syncOutbox() : Promise.resolve());
+      setLastSync(fmtNow());
+      setSyncStatus("Sincronizado ✅", true);
+      setTimeout(()=> setSyncStatus("", false), 1800);
+    }catch(e){
+      console.warn("[MP] Sync Now error:", e);
+      setSyncStatus("Error al sincronizar", true);
+    }finally{
+      setSyncBtn(true);
+      updatePendingBadge();
+    }
+  }
+
+  window.__mpSyncNow = syncNow;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const btn = document.getElementById("mpSyncNow");
+    if(btn){
+      btn.addEventListener("click", syncNow);
+    }
+    // Indicador inicial
+    setSyncBtn(true);
+    setLastSync("—");
+    try{
+      if(typeof mpSupabaseConfigOk === "function" && !mpSupabaseConfigOk()){
+        setSyncStatus("Falta configurar nube", true);
+        setTimeout(()=> setSyncStatus("", false), 2600);
+      }
+    }catch(e){}
+  });
+
+  window.addEventListener("online", ()=>{
+    // Al reconectar: intenta sincronizar y actualiza UI
+    try{ syncNow(); }catch(e){}
+  });
+})();
+
     if (typeof window.bootstrapCloud === "function") window.bootstrapCloud();
+    if (typeof window.startAutoRefresh === "function") window.startAutoRefresh();
     (async ()=>{ await window.migrateOutboxSchema(); if (typeof window.syncOutbox==="function") window.syncOutbox(); })();
 } catch (e) {
     console.warn("[MP] boot error:", e);
@@ -2643,7 +3546,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 </script>
-
 <script>
 /* === PARCHE DEFINITIVO NIP (FORZADO) ===
    Garantiza que el NIP se guarde SIEMPRE al desbloquear
@@ -2677,6 +3579,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
-
 </body>
 </html>
