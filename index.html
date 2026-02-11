@@ -2041,28 +2041,45 @@ function closeAuth(){
   document.getElementById("authModal")?.setAttribute("aria-hidden","true");
 }
 async function doLogin(){
-  const email = String(document.getElementById("authEmail")?.value || "").trim();
+  const emailRaw = String(document.getElementById("authEmail")?.value || "").trim();
+  const email = emailRaw.toLowerCase(); // evita temas de mayúsculas
   const password = String(document.getElementById("authPass")?.value || "");
   const hint = document.getElementById("authHint");
-  if(!email || !password){
-    if(hint) hint.textContent = "Ingresa correo y contraseña.";
-    return;
+  const btn  = document.getElementById("authLoginBtn");
+
+  const setHint = (t)=>{ if(hint) hint.textContent = t; };
+
+  if(!email || !password){ setHint("Ingresa correo y contraseña."); return; }
+  if(!supabaseClient){ setHint("Supabase no está configurado en esta página."); return; }
+
+  try{
+    if(btn) btn.disabled = true;
+    setHint("Validando…");
+
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if(error){
+      // Errores típicos: "Invalid login credentials", "Email not confirmed", etc.
+      setHint("No se pudo iniciar sesión: " + error.message);
+      if(btn) btn.disabled = false;
+      return;
+    }
+
+    await checkSession();
+    closeAuth();
+
+    // cargar nube al entrar
+    try{ await cloudReadSnapshot(); applyCloudToUI(); }catch(e){ console.warn(e); }
+
+    setHint("");
+    showToast("Sesión iniciada ✅");
+  }catch(err){
+    console.error("LOGIN_ERROR", err);
+    // Si se queda en “Validando…”, casi siempre es porque el navegador no pudo conectar (Failed to fetch)
+    setHint("No se pudo conectar con Supabase (red/URL/KEY). Prueba desde GitHub Pages (https) y verifica tu SUPABASE_URL y SUPABASE_KEY.");
+  }finally{
+    if(btn) btn.disabled = false;
   }
-  if(!supabaseClient){
-    if(hint) hint.textContent = "Supabase no está configurado en esta página.";
-    return;
-  }
-  if(hint) hint.textContent = "Validando…";
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if(error){
-    if(hint) hint.textContent = "No se pudo iniciar sesión: " + error.message;
-    return;
-  }
-  await checkSession();
-  closeAuth();
-  // cargar nube al entrar
-  try{ await cloudReadSnapshot(); applyCloudToUI(); }catch(e){ console.warn(e); }
-  showToast("Sesión iniciada ✅");
 }
 
 document.getElementById("authOverlay")?.addEventListener("click", closeAuth);
