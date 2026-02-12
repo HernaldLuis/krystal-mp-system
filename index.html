@@ -1364,26 +1364,7 @@ main .grid{
 }
 /* === END PATCH === */
 
-
-/* ====== AUTH (LOGIN) ====== */
-.auth-overlay{position:fixed; inset:0; background:rgba(0,0,0,.62); backdrop-filter: blur(3px); z-index:9998;}
-.auth-modal{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:9999; padding:18px;}
-.auth-inner{width:min(520px, 92vw); border-radius:18px; border:1px solid rgba(255,255,255,.14); background:rgba(15,15,18,.92); box-shadow:0 18px 60px rgba(0,0,0,.55); overflow:hidden;}
-.auth-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.10);}
-.auth-title{font-weight:900; letter-spacing:.2px;}
-.auth-close{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#fff; border-radius:10px; padding:6px 10px; cursor:pointer;}
-.auth-body{padding:14px 16px;}
-.auth-text{margin:0 0 12px; color:rgba(255,255,255,.85); font-size:13px;}
-.auth-row{margin:10px 0;}
-.auth-input{width:100%; padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#fff; outline:none;}
-.auth-input:focus{border-color:rgba(255,255,255,.28);}
-.auth-actions{display:flex; gap:10px; margin-top:12px;}
-.auth-btn{flex:1; padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.10); color:#fff; font-weight:900; cursor:pointer;}
-.auth-hint{margin-top:10px; font-size:12px; color:rgba(255,255,255,.68);}
-
-</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+</style></head>
 <body>
 <header>
 <div class="wrap">
@@ -1973,27 +1954,22 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
 <div class="mp-footer-brand">JULU ©</div>
 </div>
 </footer>
-<div aria-hidden="true" class="auth-overlay" id="authOverlay"></div>
-<div aria-hidden="true" aria-labelledby="authTitle" aria-modal="true" class="auth-modal" id="authModal" role="dialog">
-  <div class="auth-inner">
-    <div class="auth-head">
-      <div class="auth-title" id="authTitle">Iniciar sesión</div>
-      <button aria-label="Cerrar" class="auth-close" id="authClose" type="button">✕</button>
-    </div>
-    <div class="auth-body">
-      <p class="auth-text">Para <strong>ver</strong> y <strong>actualizar</strong> avances, inicia sesión con tu correo y contraseña.</p>
-      <div class="auth-row">
-        <input class="auth-input" id="authEmail" type="email" placeholder="Correo" autocomplete="email" />
-      </div>
-      <div class="auth-row">
-        <input class="auth-input" id="authPass" type="password" placeholder="Contraseña" autocomplete="current-password" />
-      </div>
-      <div class="auth-actions">
-        <button class="auth-btn" id="authLoginBtn" type="button">Entrar</button>
-      </div>
-      <div class="auth-hint" id="authHint">La sesión se queda guardada en este dispositivo.</div>
-    </div>
-  </div>
+<div aria-hidden="true" class="nip-overlay" id="nipOverlay"></div>
+<div aria-hidden="true" aria-labelledby="nipTitle" aria-modal="true" class="nip-modal" id="nipModal" role="dialog">
+<div class="nip-inner">
+<div class="nip-head">
+<div class="nip-title" id="nipTitle">Acceso de registro</div>
+<button aria-label="Cerrar" class="nip-close" id="nipClose" type="button">✕</button>
+</div>
+<div class="nip-body">
+<p class="nip-text">Para <strong>modificar</strong> el avance de habitaciones, ingresa el <strong>NIP</strong>. La consulta es libre.</p>
+<div class="nip-row">
+<input autocomplete="one-time-code" class="nip-input" id="nipInput" inputmode="text" maxlength="12" placeholder="NIP" type="password"/>
+<button class="nip-btn" id="nipSubmit" type="button">Desbloquear</button>
+</div>
+<div class="nip-hint" id="nipHint">Tip: el acceso se mantiene en esta sesión.</div>
+</div>
+</div>
 </div>
 <div aria-hidden="true" class="mp-toast" id="mpToast">
 <div class="mp-toast-inner" id="mpToastInner">
@@ -2015,87 +1991,6 @@ Pisos 41 al 47 (equivalentes a 1–7)</div>
   // "Verify JWT with legacy secret".
 const SUPABASE_URL = "https://zpdmxmsjgdecxzcomcbe.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZG14bXNqZ2RlY3h6Y29tY2JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3ODI4MDUsImV4cCI6MjA4NjM1ODgwNX0.Cgai3DWMLP3dlcEHy5TA9zyPJgD28DbETJUqFm1QLoA";
-
-// ====== SUPABASE CLIENT (Auth + DB) ======
-const supabaseClient = (window.supabase && window.supabase.createClient)
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-  : null;
-
-let AUTH_OK = false;
-
-async function checkSession(){
-  if(!supabaseClient) return false;
-  const { data } = await supabaseClient.auth.getSession();
-  AUTH_OK = !!data?.session;
-  document.body.classList.toggle("mp-locked", !AUTH_OK);
-  return AUTH_OK;
-}
-
-function openAuth(){
-  document.getElementById("authOverlay")?.setAttribute("aria-hidden","false");
-  document.getElementById("authModal")?.setAttribute("aria-hidden","false");
-  setTimeout(()=> document.getElementById("authEmail")?.focus(), 0);
-}
-function closeAuth(){
-  document.getElementById("authOverlay")?.setAttribute("aria-hidden","true");
-  document.getElementById("authModal")?.setAttribute("aria-hidden","true");
-}
-async function doLogin(){
-  const emailRaw = String(document.getElementById("authEmail")?.value || "").trim();
-  const email = emailRaw.toLowerCase(); // evita temas de mayúsculas
-  const password = String(document.getElementById("authPass")?.value || "");
-  const hint = document.getElementById("authHint");
-  const btn  = document.getElementById("authLoginBtn");
-
-  const setHint = (t)=>{ if(hint) hint.textContent = t; };
-
-  if(!email || !password){ setHint("Ingresa correo y contraseña."); return; }
-  if(!supabaseClient){ setHint("Supabase no está configurado en esta página."); return; }
-
-  try{
-    if(btn) btn.disabled = true;
-    setHint("Validando…");
-
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-    if(error){
-      // Errores típicos: "Invalid login credentials", "Email not confirmed", etc.
-      setHint("No se pudo iniciar sesión: " + error.message);
-      if(btn) btn.disabled = false;
-      return;
-    }
-
-    await checkSession();
-    closeAuth();
-
-    // cargar nube al entrar
-    try{ await cloudReadSnapshot(); applyCloudToUI(); }catch(e){ console.warn(e); }
-
-    setHint("");
-    showToast("Sesión iniciada ✅");
-  }catch(err){
-    console.error("LOGIN_ERROR", err);
-    // Si se queda en “Validando…”, casi siempre es porque el navegador no pudo conectar (Failed to fetch)
-    setHint("No se pudo conectar con Supabase (red/URL/KEY). Prueba desde GitHub Pages (https) y verifica tu SUPABASE_URL y SUPABASE_KEY.");
-  }finally{
-    if(btn) btn.disabled = false;
-  }
-}
-
-document.getElementById("authOverlay")?.addEventListener("click", closeAuth);
-document.getElementById("authClose")?.addEventListener("click", closeAuth);
-document.getElementById("authLoginBtn")?.addEventListener("click", doLogin);
-document.getElementById("authPass")?.addEventListener("keydown", (e)=>{ if(e.key==="Enter") doLogin(); });
-
-// Al cargar, revisamos sesión; si no hay, pedimos login.
-setTimeout(async ()=>{
-  const ok = await checkSession();
-  if(!ok) openAuth();
-  else{
-    try{ await cloudReadSnapshot(); applyCloudToUI(); }catch(e){ console.warn(e); }
-  }
-}, 50);
-
 
   // Validación rápida de configuración
   function mpSupabaseConfigOk(){
@@ -2125,7 +2020,7 @@ window.getNipActual = getNipActual;
 window.setNipActual = setNipActual;
 
 // Publishable key // ej. eyJhbGciOi...
-  const EDGE_UPLOAD_FN = "uploadEvidence"; // (desactivado en modo Auth directo)
+  const EDGE_UPLOAD_FN = "uploadEvidence";
   const EDGE_READ_FN = "mpRead";
   const EDGE_SYNC_FN = "mpSync";
 
@@ -2150,12 +2045,12 @@ window.setNipActual = setNipActual;
   const sideMode = document.getElementById("mpSideMode");
   const sideBody = document.getElementById("mpSideBody");
 
-  const nipOverlay = document.getElementById("authOverlay");
-  const nipModal = document.getElementById("authModal");
-  const nipClose = document.getElementById("authClose");
-  const nipInput = document.getElementById("authPass");
-  const nipSubmit = document.getElementById("authLoginBtn");
-  const nipHint = document.getElementById("authHint");
+  const nipOverlay = document.getElementById("nipOverlay");
+  const nipModal = document.getElementById("nipModal");
+  const nipClose = document.getElementById("nipClose");
+  const nipInput = document.getElementById("nipInput");
+  const nipSubmit = document.getElementById("nipSubmit");
+  const nipHint = document.getElementById("nipHint");
 
   const toast = document.getElementById("mpToast");
   const toastInner = document.getElementById("mpToastInner");
@@ -2212,15 +2107,39 @@ window.setNipActual = setNipActual;
   }
 
 
-  function isUnlocked(){ return AUTH_OK; }
+  function isUnlocked(){ return sessionStorage.getItem(NIP_SESSION_KEY) === "1"; }
   function lockUI(){ document.body.classList.add("mp-locked"); }
   function unlockUI(){ document.body.classList.remove("mp-locked"); }
-  function openNip(){ openAuth(); }
-  function closeNip(){ closeAuth(); }
-  function tryUnlock(){ doLogin(); }
 
-  document.getElementById("authOverlay")?.addEventListener("click", closeAuth);
-nipClose.addEventListener("click", closeNip);
+  function openNip(){
+    nipOverlay.setAttribute("aria-hidden","false");
+    nipModal.setAttribute("aria-hidden","false");
+    nipHint.textContent = "Tip: el acceso se mantiene en esta sesión.";
+    setTimeout(()=> nipInput.focus(), 0);
+  }
+  function closeNip(){
+    nipOverlay.setAttribute("aria-hidden","true");
+    nipModal.setAttribute("aria-hidden","true");
+  }
+  function tryUnlock(){
+    const v = (nipInput.value || "").trim();
+    if(v === NIP_CODE){
+      sessionStorage.setItem(NIP_SESSION_KEY, "1");
+      sessionStorage.setItem(NIP_VALUE_KEY, v);
+      sessionStorage.setItem("mp_nip", v); // compat: usado por cloudWrite()
+      unlockUI();
+      closeNip();
+      nipInput.value = "";
+      showToast("Acceso concedido ✅");
+    }else{
+      nipHint.textContent = "NIP incorrecto. Intenta de nuevo.";
+      nipInput.select();
+      showToast("NIP incorrecto ❌");
+    }
+  }
+
+  nipOverlay.addEventListener("click", closeNip);
+  nipClose.addEventListener("click", closeNip);
   nipSubmit.addEventListener("click", tryUnlock);
   nipInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") tryUnlock(); });
   document.addEventListener("keydown", (e)=>{
@@ -2364,19 +2283,6 @@ const Cloud = {
   ready: false,
 };
 
-
-
-function applyCloudToUI(){
-  // Aplica Cloud.rooms/Cloud.history a la UI usando la función existente que recalcula colores/porcentajes.
-  // Si el proyecto cambia nombres internos, este puente se ajusta sin tocar el resto.
-  try{
-    if(typeof hydrateAllFromCloud === "function"){ hydrateAllFromCloud(); return; }
-  }catch(_){}
-  // Fallback: intenta marcar habitaciones como "cargadas" y recalcular.
-  try{
-    if(typeof refreshAllTiles === "function"){ refreshAllTiles(); }
-  }catch(_){}
-}
 function sbHeaders(extra){
   const h = {
     "Content-Type": "application/json",
@@ -2483,38 +2389,27 @@ function saveHistory(room, arr){
 }
 
 async function cloudReadSnapshot(){
-  if(!supabaseClient){
-    throw new Error("Supabase no está configurado.");
-  }
-  const ok = await checkSession();
-  if(!ok){
-    openAuth();
-    throw new Error("Sesión requerida.");
-  }
-
+  const url = `${SUPABASE_URL}/functions/v1/${EDGE_READ_FN}`;
   const t0 = performance.now();
-  const { data, error } = await supabaseClient
-    .from("mp_estado")
-    .select("room,state,history")
-    .eq("vuelta", VUELTA_ACTIVA);
-
-  const ms = performance.now() - t0;
-
-  if(error) throw new Error("Lectura nube: " + error.message);
-
-  const rooms = {};
-  const history = {};
-  (data || []).forEach(row=>{
-    if(row?.room) rooms[row.room] = row.state || {};
-    if(row?.room) history[row.room] = row.history || [];
+  const res = await fetch(url, {
+    method: "POST",
+    headers: sbHeaders(),
+    body: JSON.stringify({ vuelta: VUELTA_ACTIVA })
   });
-
-  Cloud.rooms = rooms;
-  Cloud.history = history;
+  const ms = performance.now() - t0;
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`mpRead ${res.status}: ${txt || res.statusText}`);
+  }
+  const data = await res.json();
+  // Esperado: { rooms: { "2210": {...} }, history: { "2210": [...] } }
+  Cloud.rooms = (data && data.rooms) ? data.rooms : {};
+  Cloud.history = (data && data.history) ? data.history : {};
   Cloud.ready = true;
-
+  // cache local para lectura offline
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
   showToastProgress("Sincronizando nube…", ms, "Sincronizado ✅");
-  return { rooms, history };
+  return data;
 }
 
 async function loadOfflineCache(){
@@ -2573,31 +2468,47 @@ async function enqueueOrSend(op){
 }
 
 async function cloudWrite(op){
-  if(!supabaseClient) throw new Error("Supabase no está configurado.");
-  const ok = await checkSession();
-  if(!ok){ openAuth(); throw new Error("Sesión requerida."); }
+  
+    
+  const room = String(op?.habitacion || op?.room || "").trim();
+  const vuelta = String(op?.vuelta || "").trim();
+// Guard cliente: evita encolar cosas sin vuelta/habitación
+    if (!vuelta || !room) {
+      console.warn("[MP] Falta vuelta o habitación (cliente). room:", room, "vuelta:", vuelta);
+      throw new Error("Falta vuelta o habitación (cliente)");
+    }
 
-  const room = String(op?.room || op?.habitacion || "").trim();
-  if(!room) throw new Error("Falta habitación.");
+const url = `${SUPABASE_URL}/functions/v1/${EDGE_SYNC_FN}`;
+  const body = {
+    nip: getNipActual(),
+    action: (String(op?.action || "").trim() || "save_state"),
+    vuelta,
+    room,
+    habitacion: room,
+    state: op?.payload ?? {},
+    payload: op?.payload ?? {}
+  };
   const t0 = performance.now();
-
-  if(op.action === "save_state"){
-    const payload = op.payload || {};
-    const { error } = await supabaseClient
-      .from("mp_estado")
-      .upsert({ vuelta: VUELTA_ACTIVA, room, state: payload, updated_at: new Date().toISOString() }, { onConflict: "vuelta,room" });
-    if(error) throw new Error("Guardar estado: " + error.message);
-  }
-
-  if(op.action === "save_history"){
-    const payload = op.payload || [];
-    const { error } = await supabaseClient
-      .from("mp_estado")
-      .upsert({ vuelta: VUELTA_ACTIVA, room, history: payload, updated_at: new Date().toISOString() }, { onConflict: "vuelta,room" });
-    if(error) throw new Error("Guardar historial: " + error.message);
-  }
-
+  const res = await fetch(url, {
+    method: "POST",
+    headers: sbHeaders(),
+    body: JSON.stringify(body)
+  });
   const ms = performance.now() - t0;
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`mpSync ${res.status}: ${txt || res.statusText}`);
+  }
+  // si el servidor devuelve estado actualizado, lo absorbemos
+  const data = await res.json().catch(()=> ({}));
+  if(data && data.room && data.state){
+    Cloud.rooms[data.room] = normalizeState(data.state);
+  }
+  if(data && data.room && data.history){
+    Cloud.history[data.room] = Array.isArray(data.history) ? data.history : Cloud.history[data.room];
+  }
+  // refrescar cache
+  idbPut(CACHE_STORE, { key: SNAPSHOT_KEY(), value: { rooms: Cloud.rooms, history: Cloud.history, savedAt: Date.now() } }).catch(()=>{});
   return ms;
 }
 
@@ -3502,145 +3413,13 @@ if(mpInlineOk){ mpInlineOk.addEventListener("click", hideInlineMsg); }
 </div>
 </div>
 
-<script>
 
-// === Boot seguro (evita ReferenceError si cambian scopes) ===
-document.addEventListener("DOMContentLoaded", () => {
-
-  // === Ensure migrateOutboxSchema exists in THIS script tag (evita cache/orden) ===
-  if (typeof window.migrateOutboxSchema !== "function") {
-    window.migrateOutboxSchema = async function migrateOutboxSchema(){
-      try{
-        const KEY = "mp_outbox_v1";
-        const raw = localStorage.getItem(KEY);
-        if(!raw) return;
-        let arr;
-        try { arr = JSON.parse(raw); } catch(e){ localStorage.removeItem(KEY); return; }
-        if(!Array.isArray(arr)) { localStorage.removeItem(KEY); return; }
-        const cleaned = [];
-        for(const it of arr){
-          if(!it || typeof it !== "object") continue;
-          const room = String(it.habitacion || it.room || it.roomNumber || it.num || "").trim();
-          const vuelta = String(it.vuelta || it.vueltaActiva || it.round || "").trim();
-          if(!room || !vuelta) continue;
-          cleaned.push({
-            nip: String(it.nip || "").trim(),
-            action: String(it.action || it.tipo || "save_state").trim(),
-            room,
-            habitacion: room,
-            vuelta,
-            payload: it.payload || it.data || {}
-          });
-        }
-        localStorage.setItem(KEY, JSON.stringify(cleaned));
-        console.log("[MP] Outbox migrado (inline):", cleaned.length);
-      }catch(e){
-        console.warn("[MP] migrateOutboxSchema inline error:", e);
-      }
-    }
-  }
-  try {
-    if (typeof bootstrapCloud === "function") window.bootstrapCloud = bootstrapCloud;
-    if (typeof syncOutbox === "function") window.syncOutbox = syncOutbox;
-
-// === UI Sync (botón "Sincronizar ahora" + estatus) ===
-(function(){
-  function fmtNow(){
-    const d = new Date();
-    const hh = String(d.getHours()).padStart(2,"0");
-    const mm = String(d.getMinutes()).padStart(2,"0");
-    const ss = String(d.getSeconds()).padStart(2,"0");
-    return `${hh}:${mm}:${ss}`;
-  }
-  function setLastSync(label){
-    const el = document.getElementById("mpLastSync");
-    if(el) el.textContent = `Últ. sync: ${label}`;
-  }
-  function setSyncStatus(msg, show=true){
-    const el = document.getElementById("mpSyncStatus");
-    if(!el) return;
-    el.textContent = msg;
-    el.style.display = show ? "inline-flex" : "none";
-  }
-  function setSyncBtn(enabled){
-    const btn = document.getElementById("mpSyncNow");
-    if(!btn) return;
-    btn.disabled = !enabled;
-    btn.style.opacity = enabled ? "1" : ".65";
-    btn.style.cursor = enabled ? "pointer" : "not-allowed";
-  }
-
-  async function syncNow(){
-    // No cancelamos la carga: si no hay internet, solo avisamos que quedó en cola.
-    // Si no está configurada la nube, no intentamos enviar (pero mantenemos la cola).
-    if(typeof mpSupabaseConfigOk === "function" && !mpSupabaseConfigOk()){
-      setSyncStatus("Falta configurar nube", true);
-      setLastSync("—");
-      setTimeout(()=> setSyncStatus("", false), 2600);
-      return;
-    }
-    if(!navigator.onLine){
-      setSyncStatus("Sin internet: quedará en cola", true);
-      setLastSync("—");
-      updatePendingBadge();
-      setTimeout(()=> setSyncStatus("", false), 2400);
-      return;
-    }
-    try{
-      setSyncBtn(false);
-      setSyncStatus("Sincronizando...", true);
-      await (window.syncOutbox ? window.syncOutbox() : Promise.resolve());
-      setLastSync(fmtNow());
-      setSyncStatus("Sincronizado ✅", true);
-      setTimeout(()=> setSyncStatus("", false), 1800);
-    }catch(e){
-      console.warn("[MP] Sync Now error:", e);
-      setSyncStatus("Error al sincronizar", true);
-    }finally{
-      setSyncBtn(true);
-      updatePendingBadge();
-    }
-  }
-
-  window.__mpSyncNow = syncNow;
-
-  document.addEventListener("DOMContentLoaded", ()=>{
-    const btn = document.getElementById("mpSyncNow");
-    if(btn){
-      btn.addEventListener("click", syncNow);
-    }
-    // Indicador inicial
-    setSyncBtn(true);
-    setLastSync("—");
-    try{
-      if(typeof mpSupabaseConfigOk === "function" && !mpSupabaseConfigOk()){
-        setSyncStatus("Falta configurar nube", true);
-        setTimeout(()=> setSyncStatus("", false), 2600);
-      }
-    }catch(e){}
-  });
-
-  window.addEventListener("online", ()=>{
-    // Al reconectar: intenta sincronizar y actualiza UI
-    try{ syncNow(); }catch(e){}
-  });
-})();
-
-    if (typeof window.bootstrapCloud === "function") window.bootstrapCloud();
-    if (typeof window.startAutoRefresh === "function") window.startAutoRefresh();
-    (async ()=>{ await window.migrateOutboxSchema(); if (typeof window.syncOutbox==="function") window.syncOutbox(); })();
-} catch (e) {
-    console.warn("[MP] boot error:", e);
-  }
-});
-
-</script>
 <script>
 /* === PARCHE DEFINITIVO NIP (FORZADO) ===
    Garantiza que el NIP se guarde SIEMPRE al desbloquear
 */
 document.addEventListener("DOMContentLoaded", () => {
-  const nipInput = document.getElementById("authPass");
+  const nipInput = document.getElementById("nipInput");
   if (!nipInput) return;
 
   function forceSaveNip(){
