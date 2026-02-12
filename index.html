@@ -508,7 +508,36 @@ body::before{
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(0,0,0,.18);
 }
-.mp-item input{ margin-top: 2px; width: 18px; height: 18px; accent-color: #ffffff;}
+.mp-item input{
+  /* Checkbox visible y consistente (especialmente en móvil) */
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.55);
+  background: rgba(0,0,0,.18);
+  display: grid;
+  place-content: center;
+  flex: 0 0 auto;
+}
+.mp-item input:checked{
+  border-color: rgba(255,255,255,.35);
+  background: linear-gradient(145deg, #1f7f5c, #55d6a3);
+}
+.mp-item input:checked::before{
+  content: "✓";
+  color: rgba(10,13,24,.92);
+  font-weight: 1000;
+  font-size: 14px;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+.mp-item input:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(83,214,163,.22);
+}
 .mp-item label{ font-size: 13px; line-height: 1.25; color: rgba(255,255,255,.88); cursor:pointer;}
 .mp-item .n{font-size:12px; opacity:.8; font-weight:900; margin-right:8px;}
 
