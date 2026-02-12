@@ -3478,3 +3478,22 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
+
+
+<script>
+if (typeof supabase !== "undefined") {
+  supabase
+    .channel('mp-estado-sync')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'mp_estado' },
+      async () => {
+        console.log("Realtime: cambio detectado");
+        if (typeof cloudLoadEstado === "function") {
+          await cloudLoadEstado();
+        }
+      }
+    )
+    .subscribe();
+}
+</script>
