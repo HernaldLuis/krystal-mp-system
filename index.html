@@ -6,9 +6,6 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Mantenimiento Preventivo · Checklist por Habitación</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</title>
-
 <script>
 // === SUPABASE CONFIG ===
 // Config de Supabase se declara más abajo (boot seguro) para evitar errores de orden.
@@ -2430,10 +2427,12 @@ async function cloudReadSnapshot(){
   });
   const ms = performance.now() - t0;
   if(!res.ok){
+    window.__MP_CLOUD_OK__ = false;
     const txt = await res.text().catch(()=> "");
     throw new Error(`mpRead ${res.status}: ${txt || res.statusText}`);
   }
   const data = await res.json();
+  window.__MP_CLOUD_OK__ = true;
   // Esperado: { rooms: { "2210": {...} }, history: { "2210": [...] } }
   Cloud.rooms = (data && data.rooms) ? data.rooms : {};
   Cloud.history = (data && data.history) ? data.history : {};
@@ -2490,8 +2489,7 @@ async function enqueueOrSend(op){
   try{
     const ms = await cloudWrite(op);
     showToastProgress("Guardando en nube…", ms, "Guardado ✅");
-  repaintAll();
-}catch(e){
+  }catch(e){
     await enqueue(op).catch(()=>{});
     showToast("Guardado pendiente ⏳ (error nube)");
     console.warn("[MP] Nube falló, se encoló:", e);
@@ -2703,18 +2701,28 @@ function updateConnectionSemaforo(pendingCount){
   const green = wrap.querySelector(".conn-green");
   [red,yellow,green].forEach(el=> el && el.classList.remove("is-on"));
 
+  // Sin internet
   if(!navigator.onLine){
     red && red.classList.add("is-on");
     txt.textContent = "Sin internet";
     return;
   }
+
+  // Con internet pero sin nube
+  if(window.__MP_CLOUD_OK__ === false){
+    yellow && yellow.classList.add("is-on");
+    txt.textContent = "Internet OK · Sin nube";
+    return;
+  }
+
+  // Con internet (y nube OK o aún verificando)
   const p = Number(pendingCount||0);
   if(p > 0){
     yellow && yellow.classList.add("is-on");
     txt.textContent = "Conectado (pendientes)";
   }else{
     green && green.classList.add("is-on");
-    txt.textContent = "Conectado";
+    txt.textContent = (window.__MP_CLOUD_OK__ === true) ? "Conectado" : "Conectado";
   }
 }
 
@@ -2722,36 +2730,7 @@ function updatePendingBadge(){
   const el = document.getElementById("mpPendingCount");
   if(!el) return;
   if(pendingBadgeTimer) clearTimeout(pendingBadgeTimer);
-  pendingBadgeTimer = setTimeout// ===== Realtime (sin recargar) =====
-function startRealtimeMP(){
-  // Realtime solo si tenemos URL/KEY y la librería cargó
-  if(!SUPABASE_URL || !SUPABASE_KEY) return;
-  if(!(window.supabase && typeof window.supabase.createClient === "function")) return;
-
-  try{
-    const rt = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false }
-    });
-
-    rt.channel("mp-estado-sync")
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "mp_estado" },
-        async () => {
-          try{
-            await cloudReadSnapshot();
-          }catch(e){
-            await loadOfflineCache();
-          }
-          repaintAll();
-        }
-      )
-      .subscribe();
-  }catch(e){
-    console.warn("[MP] Realtime no disponible:", e);
-  }
-}
-
-(async ()=>{
+  pendingBadgeTimer = setTimeout(async ()=>{
     const pending = await idbAll(OUTBOX_STORE).catch(()=> []);
     el.textContent = String(pending.length || 0);
     el.style.display = (pending.length ? "inline-flex" : "none");
@@ -2761,16 +2740,14 @@ function startRealtimeMP(){
 }
 
 function repaintAll(){
-  // Repinta todas las habitaciones con base en Cloud.rooms (estado en nube/cache)
-  document.querySelectorAll(".hab").forEach(el=>{
-    const room = (el.dataset.room || el.querySelector(".num")?.textContent || "").trim();
+  // Repinta todos los botones con base en Cloud.rooms (sin tocar estructura existente)
+  document.querySelectorAll(".habitacion-btn").forEach(btn=>{
+    const room = (btn.getAttribute("data-room") || btn.textContent || "").trim();
     if(!room) return;
     const obj = load(room);
     const pct = percent(obj);
-    paint(el, pct);
+    paint(btn, pct);
   });
-  // Si existe panel general, lo repinta también
-  try{ if(typeof renderGeneralPanel === "function") renderGeneralPanel(); }catch(e){}
 }
 
 async function bootstrapCloud(){
@@ -3439,8 +3416,6 @@ function render(){
     tiles.forEach((t,i)=> setTimeout(()=> t.classList.add("is-in"), Math.min(900, i*6)));
   });
 
-
-  try{ startRealtimeMP(); }catch(e){ console.warn('[MP] startRealtimeMP error', e); }
 })();
 
 
