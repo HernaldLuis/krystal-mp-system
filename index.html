@@ -6,6 +6,9 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>Mantenimiento Preventivo · Checklist por Habitación</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</title>
+
 <script>
 // === SUPABASE CONFIG ===
 // Config de Supabase se declara más abajo (boot seguro) para evitar errores de orden.
@@ -2487,7 +2490,8 @@ async function enqueueOrSend(op){
   try{
     const ms = await cloudWrite(op);
     showToastProgress("Guardando en nube…", ms, "Guardado ✅");
-  }catch(e){
+  repaintAll();
+}catch(e){
     await enqueue(op).catch(()=>{});
     showToast("Guardado pendiente ⏳ (error nube)");
     console.warn("[MP] Nube falló, se encoló:", e);
@@ -2718,7 +2722,36 @@ function updatePendingBadge(){
   const el = document.getElementById("mpPendingCount");
   if(!el) return;
   if(pendingBadgeTimer) clearTimeout(pendingBadgeTimer);
-  pendingBadgeTimer = setTimeout(async ()=>{
+  pendingBadgeTimer = setTimeout// ===== Realtime (sin recargar) =====
+function startRealtimeMP(){
+  // Realtime solo si tenemos URL/KEY y la librería cargó
+  if(!SUPABASE_URL || !SUPABASE_KEY) return;
+  if(!(window.supabase && typeof window.supabase.createClient === "function")) return;
+
+  try{
+    const rt = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false }
+    });
+
+    rt.channel("mp-estado-sync")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "mp_estado" },
+        async () => {
+          try{
+            await cloudReadSnapshot();
+          }catch(e){
+            await loadOfflineCache();
+          }
+          repaintAll();
+        }
+      )
+      .subscribe();
+  }catch(e){
+    console.warn("[MP] Realtime no disponible:", e);
+  }
+}
+
+(async ()=>{
     const pending = await idbAll(OUTBOX_STORE).catch(()=> []);
     el.textContent = String(pending.length || 0);
     el.style.display = (pending.length ? "inline-flex" : "none");
@@ -2728,14 +2761,16 @@ function updatePendingBadge(){
 }
 
 function repaintAll(){
-  // Repinta todos los botones con base en Cloud.rooms (sin tocar estructura existente)
-  document.querySelectorAll(".habitacion-btn").forEach(btn=>{
-    const room = (btn.getAttribute("data-room") || btn.textContent || "").trim();
+  // Repinta todas las habitaciones con base en Cloud.rooms (estado en nube/cache)
+  document.querySelectorAll(".hab").forEach(el=>{
+    const room = (el.dataset.room || el.querySelector(".num")?.textContent || "").trim();
     if(!room) return;
     const obj = load(room);
     const pct = percent(obj);
-    paint(btn, pct);
+    paint(el, pct);
   });
+  // Si existe panel general, lo repinta también
+  try{ if(typeof renderGeneralPanel === "function") renderGeneralPanel(); }catch(e){}
 }
 
 async function bootstrapCloud(){
@@ -3404,6 +3439,8 @@ function render(){
     tiles.forEach((t,i)=> setTimeout(()=> t.classList.add("is-in"), Math.min(900, i*6)));
   });
 
+
+  try{ startRealtimeMP(); }catch(e){ console.warn('[MP] startRealtimeMP error', e); }
 })();
 
 
@@ -3478,22 +3515,3 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 </body>
 </html>
-
-
-<script>
-if (typeof supabase !== "undefined") {
-  supabase
-    .channel('mp-estado-sync')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'mp_estado' },
-      async () => {
-        console.log("Realtime: cambio detectado");
-        if (typeof cloudLoadEstado === "function") {
-          await cloudLoadEstado();
-        }
-      }
-    )
-    .subscribe();
-}
-</script>
