@@ -2740,9 +2740,37 @@ function updatePendingBadge(){
 }
 
 function repaintAll(){
-  // Repinta todos los botones con base en Cloud.rooms (sin tocar estructura existente)
+  // Repinta todas las habitaciones con base en Cloud.rooms.
+  // Soporta ambas estructuras: botones ".habitacion-btn" y celdas ".hab".
+  const pickRoom = (el)=>{
+    const r1 = (el.getAttribute && (el.getAttribute("data-room") || el.getAttribute("data-hab"))) || "";
+    const r2 = (el.dataset && (el.dataset.room || el.dataset.hab)) || "";
+    let room = String(r2 || r1 || "").trim();
+    if(!room){
+      // fallback: buscar .num (estructura de croquis)
+      const numEl = el.querySelector ? el.querySelector(".num") : null;
+      if(numEl) room = String(numEl.textContent || "").trim();
+    }
+    if(!room){
+      room = String(el.textContent || "").trim();
+    }
+    return room;
+  };
+
+  // 1) Estructura nueva (croquis): .hab
+  document.querySelectorAll(".hab").forEach(el=>{
+    const room = pickRoom(el);
+    if(!room) return;
+    // dejamos data-room para futuros usos
+    if(el.dataset) el.dataset.room = room;
+    const obj = load(room);
+    const pct = percent(obj);
+    paint(el, pct);
+  });
+
+  // 2) Compatibilidad: botones antiguos .habitacion-btn
   document.querySelectorAll(".habitacion-btn").forEach(btn=>{
-    const room = (btn.getAttribute("data-room") || btn.textContent || "").trim();
+    const room = pickRoom(btn);
     if(!room) return;
     const obj = load(room);
     const pct = percent(obj);
